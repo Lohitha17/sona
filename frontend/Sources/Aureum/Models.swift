@@ -51,9 +51,18 @@ struct Totals: Codable, Sendable {
     var unrealized: Double
 }
 
+struct KaratTotal: Codable, Sendable {
+    var karat: Int
+    var pieces: Int
+    var netWeightG: Double
+    var fineWeightG: Double
+    var estimatedValue: Double
+}
+
 struct Summary: Codable, Sendable {
     var settings: Settings
     var totals: Totals
+    var byKarat: [KaratTotal]
     var byCategory: [CategoryTotal]
     var pieces: [Piece]
     var query: String

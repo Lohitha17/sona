@@ -78,6 +78,14 @@ def test_only_18_22_and_24_karat_are_accepted():
     assert listed.status_code == 200
     assert any(piece["name"] == "Pure" for piece in listed.json()["pieces"])
     assert 24 in listed.json()["available_karats"]
+    vault = client.get("/api/summary")
+    rows = vault.json()["by_karat"]
+    assert [row["karat"] for row in rows] == [24, 22, 18]
+    pure = next(row for row in rows if row["karat"] == 24)
+    assert pure["pieces"] >= 1
+    assert pure["net_weight_g"] > 0
+    assert pure["fine_weight_g"] > 0
+    assert pure["estimated_value"] > 0
 
 
 def test_stone_heavier_than_gross_is_rejected():

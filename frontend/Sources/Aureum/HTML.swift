@@ -214,6 +214,14 @@ enum Shell {
       letter-spacing: -0.03em;
     }
     .lede { color: var(--muted); margin: 10px 0 0; max-width: 46ch; line-height: 1.5; }
+    .karat-group { margin: 4px 0 16px; }
+    .karat-group h2 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: -0.03em;
+    }
     .stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);

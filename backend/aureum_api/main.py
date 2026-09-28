@@ -138,6 +138,23 @@ def _by_category(pieces: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+def _by_karat(pieces: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for karat in KARATS:
+        group = [piece for piece in pieces if abs(piece["karat"] - karat) < 0.05]
+        totals = _totals(group)
+        rows.append(
+            {
+                "karat": karat,
+                "pieces": totals["pieces"],
+                "net_weight_g": totals["net_weight_g"],
+                "fine_weight_g": totals["fine_weight_g"],
+                "estimated_value": totals["estimated_value"],
+            }
+        )
+    return rows
+
+
 def _load_pieces(conn) -> list[dict[str, Any]]:
     rate = _settings(conn)["gold_rate_24k"]
     rows = conn.execute("SELECT * FROM pieces ORDER BY created_at DESC, name COLLATE NOCASE").fetchall()
@@ -321,6 +338,7 @@ def summary(q: str = "", category: str = "", karat: str = ""):
     return {
         "settings": settings,
         "totals": _totals(pieces),
+        "by_karat": _by_karat(pieces),
         "by_category": _by_category(pieces),
         "pieces": pieces,
         "query": q.strip(),

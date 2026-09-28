@@ -34,6 +34,7 @@ enum Pages {
           </div>
         </header>
         \(stats(totals, currency: settings.currency))
+        \(karatStats(summary.byKarat, currency: settings.currency))
         \(toolbar(summary))
         <div class="split">
           <div>\(cards)</div>
@@ -448,25 +449,34 @@ enum Pages {
         let chips = [("" , "All")] + summary.availableCategories.map { ($0, Catalogue.label($0)) }
         let links = chips.map { key, label in
             let on = key == summary.category ? " class=\"on\"" : ""
-            return "<a\(on) href=\"\(Link.vault(category: key, q: summary.query, karat: summary.karat))\">\(Esc.text(label))</a>"
-        }.joined()
-        let karatLinks = ([0] + summary.availableKarats).map { value in
-            let on = value == summary.karat ? " class=\"on\"" : ""
-            let label = value == 0 ? "All karats" : "\(value)K"
-            return "<a\(on) href=\"\(Link.vault(category: summary.category, q: summary.query, karat: value))\">\(label)</a>"
+            return "<a\(on) href=\"\(Link.vault(category: key, q: summary.query))\">\(Esc.text(label))</a>"
         }.joined()
         return """
         <div class="toolbar">
           <form class="search" method="get" action="/">
             \(summary.category.isEmpty ? "" : "<input type=\"hidden\" name=\"category\" value=\"\(Esc.attr(summary.category))\">")
-            \(summary.karat == 0 ? "" : "<input type=\"hidden\" name=\"karat\" value=\"\(summary.karat)\">")
             <input type="search" name="q" value="\(Esc.attr(summary.query))" placeholder="Search name, hallmark, notes" aria-label="Search pieces">
             <button class="btn quiet" type="submit">Search</button>
           </form>
           <div class="chips">\(links)</div>
-          <div class="chips">\(karatLinks)</div>
         </div>
         """
+    }
+
+    private static func karatStats(_ rows: [KaratTotal], currency: String) -> String {
+        rows.map { row in
+            """
+            <section class="karat-group">
+              <h2>\(row.karat)K</h2>
+              <div class="stats">
+                <article class="stat"><span>Pieces</span><strong>\(row.pieces)</strong></article>
+                <article class="stat"><span>Net gold</span><strong>\(Esc.text(Format.grams(row.netWeightG)))</strong></article>
+                <article class="stat"><span>Fine gold</span><strong>\(Esc.text(Format.grams(row.fineWeightG)))</strong><em>24K equivalent</em></article>
+                <article class="stat"><span>Vault value</span><strong>\(Esc.text(Format.money(row.estimatedValue, currency: currency)))</strong></article>
+              </div>
+            </section>
+            """
+        }.joined()
     }
 
     private static func karatOptions(_ karats: [Int], selected: Double) -> String {
