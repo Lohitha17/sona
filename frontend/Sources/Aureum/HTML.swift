@@ -102,7 +102,7 @@ enum Shell {
             <header class="rail">
               <a class="brand" href="/">
                 <span class="mark" aria-hidden="true"></span>
-                <span>Sona</span>
+                <span class="word">Sona</span>
               </a>
               <nav>
                 <a href="/" class="\(active == "vault" ? "active" : "")">Vault</a>
@@ -168,17 +168,22 @@ enum Shell {
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      font-size: 13px;
-      font-weight: 560;
+      color: var(--ink);
+    }
+    .brand .word {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 40px;
+      line-height: 1;
+      letter-spacing: -0.03em;
     }
     .mark {
-      width: 18px;
-      height: 18px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
       border: 1.5px solid var(--gold);
-      box-shadow: inset 0 0 0 4px rgba(231, 201, 138, 0.18);
+      box-shadow: inset 0 0 0 5px rgba(231, 201, 138, 0.18);
+      flex: none;
     }
     nav { display: flex; flex-direction: column; gap: 6px; }
     nav a {

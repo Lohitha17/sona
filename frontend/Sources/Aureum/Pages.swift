@@ -5,7 +5,7 @@ enum Pages {
         let settings = summary.settings
         let totals = summary.totals
         let filtered = !summary.query.isEmpty || !summary.category.isEmpty || summary.karat > 0
-        let title = filtered ? "Matching pieces" : "The vault"
+        let title = filtered ? "Matching pieces" : ""
         let lede: String
         if totals.pieces == 0 && !filtered {
             lede = "Add a photograph, a bill, a weight, and a karat."
@@ -26,13 +26,18 @@ enum Pages {
         } else {
             cards = "<section class=\"grid\">\(summary.pieces.map { card($0, currency: settings.currency) }.joined())</section>"
         }
+        let heading = title.isEmpty && lede.isEmpty
+            ? ""
+            : """
+            <header class="top">
+              <div>
+                \(title.isEmpty ? "" : "<h1>\(title)</h1>")
+                \(lede.isEmpty ? "" : "<p class=\"lede\">\(lede)</p>")
+              </div>
+            </header>
+            """
         let body = """
-        <header class="top">
-          <div>
-            <h1>\(title)</h1>
-            \(lede.isEmpty ? "" : "<p class=\"lede\">\(lede)</p>")
-          </div>
-        </header>
+        \(heading)
         \(stats(totals, currency: settings.currency))
         \(karatStats(summary.byKarat, currency: settings.currency))
         \(toolbar(summary))
