@@ -66,6 +66,20 @@ def test_create_values_and_image_roundtrip():
     assert totals["estimated_value"] >= body["estimated_value"]
 
 
+def test_only_18_22_and_24_karat_are_accepted():
+    client = TestClient(app)
+    rejected = client.post("/api/pieces", data=dict(FORM, name="Fourteen", karat="14"))
+    assert rejected.status_code == 422
+    assert "18K" in rejected.json()["detail"]
+    created = client.post("/api/pieces", data=dict(FORM, name="Pure", karat="24"))
+    assert created.status_code == 201, created.text
+    assert created.json()["karat"] == 24
+    listed = client.get("/api/summary", params={"karat": "24"})
+    assert listed.status_code == 200
+    assert any(piece["name"] == "Pure" for piece in listed.json()["pieces"])
+    assert 24 in listed.json()["available_karats"]
+
+
 def test_stone_heavier_than_gross_is_rejected():
     client = TestClient(app)
     bad = dict(FORM, name="Too many stones", stone_weight_g="30")

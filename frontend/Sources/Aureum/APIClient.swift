@@ -17,8 +17,8 @@ struct ProxyResult: Sendable {
 struct APIClient: Sendable {
     let base: URL
 
-    func summary(q: String, category: String) async throws -> Summary {
-        try await get("/api/summary", query: ["q": q, "category": category])
+    func summary(q: String, category: String, karat: String) async throws -> Summary {
+        try await get("/api/summary", query: ["q": q, "category": category, "karat": karat])
     }
 
     func piece(_ id: String) async throws -> PieceEnvelope {

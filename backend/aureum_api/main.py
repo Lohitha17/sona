@@ -16,6 +16,7 @@ from aureum_api import calc
 from aureum_api.db import (
     CATEGORIES,
     CURRENCIES,
+    KARATS,
     STORAGES,
     UPLOADS,
     connect,
@@ -170,8 +171,8 @@ def _validate_numbers(
         raise HTTPException(status_code=422, detail="Stone weight cannot be negative.")
     if stone > gross:
         raise HTTPException(status_code=422, detail="Stone weight cannot be heavier than the gross weight.")
-    if karat <= 0 or karat > 24:
-        raise HTTPException(status_code=422, detail="Karat must be between 0 and 24.")
+    if not any(abs(karat - allowed) < 0.05 for allowed in KARATS):
+        raise HTTPException(status_code=422, detail="Choose 18K, 22K, or 24K.")
     if wastage < 0 or wastage > 100:
         raise HTTPException(status_code=422, detail="Wastage must be between 0 and 100 percent.")
     if making < 0 or purchase < 0:
@@ -245,7 +246,12 @@ def health():
 
 @app.get("/api/meta")
 def meta():
-    return {"categories": list(CATEGORIES), "storages": list(STORAGES), "currencies": list(CURRENCIES)}
+    return {
+        "categories": list(CATEGORIES),
+        "storages": list(STORAGES),
+        "currencies": list(CURRENCIES),
+        "karats": list(KARATS),
+    }
 
 
 @app.get("/api/settings")
@@ -275,17 +281,28 @@ def write_settings(
 
 
 @app.get("/api/summary")
-def summary(q: str = "", category: str = ""):
+def summary(q: str = "", category: str = "", karat: str = ""):
     needle = q.strip().lower()
     chosen = category.strip().lower()
     if chosen and chosen not in CATEGORIES:
         raise HTTPException(status_code=422, detail="Unknown category.")
+    chosen_karat = 0
+    if karat.strip():
+        try:
+            chosen_karat = int(float(karat))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Choose 18K, 22K, or 24K.")
+        if chosen_karat not in KARATS:
+            raise HTTPException(status_code=422, detail="Choose 18K, 22K, or 24K.")
     with connect() as conn:
         settings = _settings(conn)
         pieces = _load_pieces(conn)
     available = [category for category in CATEGORIES if any(piece["category"] == category for piece in pieces)]
+    available_karats = [item for item in KARATS if any(abs(piece["karat"] - item) < 0.05 for piece in pieces)]
     if chosen:
         pieces = [piece for piece in pieces if piece["category"] == chosen]
+    if chosen_karat:
+        pieces = [piece for piece in pieces if abs(piece["karat"] - chosen_karat) < 0.05]
     if needle:
         pieces = [
             piece
@@ -308,7 +325,9 @@ def summary(q: str = "", category: str = ""):
         "pieces": pieces,
         "query": q.strip(),
         "category": chosen,
+        "karat": chosen_karat,
         "available_categories": available,
+        "available_karats": available_karats,
     }
 
 

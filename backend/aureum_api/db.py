@@ -34,6 +34,7 @@ STORAGES = (
 )
 
 CURRENCIES = ("INR", "USD", "EUR", "GBP", "AED", "SAR")
+KARATS = (24, 22, 18)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS settings (

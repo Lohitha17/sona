@@ -4,7 +4,7 @@ enum Pages {
     static func vault(_ summary: Summary) -> String {
         let settings = summary.settings
         let totals = summary.totals
-        let filtered = !summary.query.isEmpty || !summary.category.isEmpty
+        let filtered = !summary.query.isEmpty || !summary.category.isEmpty || summary.karat > 0
         let title = filtered ? "Matching pieces" : "The vault"
         let lede: String
         if totals.pieces == 0 && !filtered {
@@ -144,7 +144,7 @@ enum Pages {
             <label><span class="label">Where it is kept</span><select name="storage">\(storageOptions)</select></label>
             <label><span class="label">Gross weight (g)</span><input name="gross_weight_g" type="number" min="0.001" max="100000" step="0.001" required value="\(Esc.attr(piece.map { Format.plain($0.grossWeightG) } ?? ""))"></label>
             <label><span class="label">Stone weight (g)</span><input name="stone_weight_g" type="number" min="0" max="100000" step="0.001" value="\(Esc.attr(piece.map { Format.plain($0.stoneWeightG) } ?? "0"))"></label>
-            <label><span class="label">Karat</span><input name="karat" type="number" min="1" max="24" step="0.1" required list="karats" value="\(Esc.attr(piece.map { Format.plain($0.karat) } ?? "22"))"></label>
+            <label><span class="label">Karat</span><select name="karat">\(karatOptions(meta.karats, selected: piece?.karat ?? 22))</select></label>
             <label><span class="label">Wastage (%)</span><input name="wastage_percent" type="number" min="0" max="100" step="0.1" value="\(Esc.attr(piece.map { Format.plain($0.wastagePercent) } ?? "0"))"></label>
             <label><span class="label">Making charge</span><input name="making_charge" type="number" min="0" step="0.01" value="\(Esc.attr(piece.map { Format.plain($0.makingCharge) } ?? "0"))"></label>
             <label><span class="label">Purchase price</span><input name="purchase_price" type="number" min="0" step="0.01" value="\(Esc.attr(piece.map { Format.plain($0.purchasePrice) } ?? "0"))"></label>
@@ -156,13 +156,6 @@ enum Pages {
             \(currentBill)
             \(camera(field: "bill", label: "Bill", openLabel: "Take the bill", shutterLabel: "Use this bill", autosave: false, note: "Photograph the jeweller’s bill. It is saved when you save the piece.", lineup: "Line up the bill, then use this picture.", ready: "Bill ready. It is saved when you save the piece."))
           </div>
-          <datalist id="karats">
-            <option value="24"></option>
-            <option value="22"></option>
-            <option value="18"></option>
-            <option value="14"></option>
-            <option value="9"></option>
-          </datalist>
           <p class="estimate" id="estimate"></p>
           <div class="actions">
             <button class="btn primary" type="submit">\(editing ? "Save changes" : "Add to the vault")</button>
@@ -455,18 +448,36 @@ enum Pages {
         let chips = [("" , "All")] + summary.availableCategories.map { ($0, Catalogue.label($0)) }
         let links = chips.map { key, label in
             let on = key == summary.category ? " class=\"on\"" : ""
-            return "<a\(on) href=\"\(Link.vault(category: key, q: summary.query))\">\(Esc.text(label))</a>"
+            return "<a\(on) href=\"\(Link.vault(category: key, q: summary.query, karat: summary.karat))\">\(Esc.text(label))</a>"
+        }.joined()
+        let karatLinks = ([0] + summary.availableKarats).map { value in
+            let on = value == summary.karat ? " class=\"on\"" : ""
+            let label = value == 0 ? "All karats" : "\(value)K"
+            return "<a\(on) href=\"\(Link.vault(category: summary.category, q: summary.query, karat: value))\">\(label)</a>"
         }.joined()
         return """
         <div class="toolbar">
           <form class="search" method="get" action="/">
             \(summary.category.isEmpty ? "" : "<input type=\"hidden\" name=\"category\" value=\"\(Esc.attr(summary.category))\">")
+            \(summary.karat == 0 ? "" : "<input type=\"hidden\" name=\"karat\" value=\"\(summary.karat)\">")
             <input type="search" name="q" value="\(Esc.attr(summary.query))" placeholder="Search name, hallmark, notes" aria-label="Search pieces">
             <button class="btn quiet" type="submit">Search</button>
           </form>
           <div class="chips">\(links)</div>
+          <div class="chips">\(karatLinks)</div>
         </div>
         """
+    }
+
+    private static func karatOptions(_ karats: [Int], selected: Double) -> String {
+        var values = karats
+        let current = Int(selected.rounded())
+        if !values.contains(current) {
+            values.append(current)
+        }
+        return values.map { value in
+            option(String(value), "\(value)K", selected: String(current))
+        }.joined()
     }
 
     private static func bars(_ rows: [CategoryTotal], currency: String) -> String {

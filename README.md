@@ -56,7 +56,7 @@ cd backend
 ## What you can record
 
 - Name, category, a photograph of the piece, and a photograph of the bill. Take either with the camera, or choose a JPEG, PNG, WEBP, or GIF up to 8 MB. On a piece that is already saved, each picture is stored as soon as you capture it.
-- Gross weight, stone weight, karat, and wastage
+- Gross weight, stone weight, karat (18K, 22K, or 24K), and wastage
 - Making charge, purchase price, hallmark, acquired date, and where the piece is kept
 
 Search covers name, hallmark, notes, and where a piece is kept.

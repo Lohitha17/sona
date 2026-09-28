@@ -58,7 +58,9 @@ struct Summary: Codable, Sendable {
     var pieces: [Piece]
     var query: String
     var category: String
+    var karat: Int
     var availableCategories: [String]
+    var availableKarats: [Int]
 }
 
 struct PieceEnvelope: Codable, Sendable {
@@ -70,6 +72,7 @@ struct Meta: Codable, Sendable {
     var categories: [String]
     var storages: [String]
     var currencies: [String]
+    var karats: [Int]
 }
 
 struct ErrorBody: Codable, Sendable {

@@ -23,10 +23,13 @@ enum Esc {
 }
 
 enum Link {
-    static func vault(category: String = "", q: String = "") -> String {
+    static func vault(category: String = "", q: String = "", karat: Int = 0) -> String {
         var parts: [String] = []
         if !category.isEmpty {
             parts.append("category=\(encode(category))")
+        }
+        if karat > 0 {
+            parts.append("karat=\(karat)")
         }
         if !q.isEmpty {
             parts.append("q=\(encode(q))")

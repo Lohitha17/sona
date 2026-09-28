@@ -23,7 +23,8 @@ enum Aureum {
             do {
                 let summary = try await api.summary(
                     q: Query.one(request, "q"),
-                    category: Query.one(request, "category")
+                    category: Query.one(request, "category"),
+                    karat: Query.one(request, "karat")
                 )
                 return .html(Pages.vault(summary))
             } catch {
