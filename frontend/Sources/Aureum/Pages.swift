@@ -33,7 +33,6 @@ enum Pages {
         \(banner)
         <header class="top">
           <div>
-            <p class="eyebrow">Private ledger</p>
             <h1>\(title)</h1>
             \(lede.isEmpty ? "" : "<p class=\"lede\">\(lede)</p>")
           </div>
