@@ -5,3 +5,5 @@ frontend/.build/
 **/.pytest_cache/
 **/*.pyc
 .DS_Store
+ios/**/xcuserdata/
+**/*.xcuserstate
