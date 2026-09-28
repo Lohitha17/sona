@@ -92,6 +92,22 @@ enum Aureum {
             return await savePiece(api: api, request: request, path: "/api/pieces/\(id)", piece: piece)
         }
 
+        router.post("pieces/:id/photo") { request, context -> Page in
+            let id = try context.parameters.require("id")
+            guard safePieceID(id) else {
+                return .html(Pages.failureMessage("That address is not a piece.", back: "/", backLabel: "Back to the vault"))
+            }
+            do {
+                let result = try await api.forward(request, path: "/api/pieces/\(id)/image")
+                if (200..<300).contains(result.status) {
+                    return .redirect("/pieces/\(id)")
+                }
+                return .html(Pages.failureMessage(api.errorMessage(result.data), back: "/pieces/\(id)", backLabel: "Back to the piece"))
+            } catch {
+                return .html(Pages.failure(error))
+            }
+        }
+
         router.post("pieces/:id/delete") { request, context -> Page in
             let id = try context.parameters.require("id")
             guard safePieceID(id) else {

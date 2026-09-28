@@ -88,6 +88,28 @@ def test_rate_change_revalues_the_piece():
     assert again.json()["settings"]["currency"] == "USD"
 
 
+def test_replace_image_saves_the_new_photograph():
+    client = TestClient(app)
+    created = client.post("/api/pieces", data=dict(FORM, name="Needs a photo"))
+    assert created.status_code == 201, created.text
+    piece_id = created.json()["id"]
+    assert created.json()["has_image"] is False
+
+    saved = client.post(
+        f"/api/pieces/{piece_id}/image",
+        files={"image": ("shot.jpg", io.BytesIO(JPEG), "image/jpeg")},
+    )
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["has_image"] is True
+
+    image = client.get(f"/api/pieces/{piece_id}/image")
+    assert image.status_code == 200
+    assert image.content.startswith(b"\xff\xd8\xff")
+
+    empty = client.post(f"/api/pieces/{piece_id}/image", files={"image": ("empty.jpg", io.BytesIO(b""), "image/jpeg")})
+    assert empty.status_code == 422
+
+
 def test_rejects_non_image_upload():
     client = TestClient(app)
     response = client.post(

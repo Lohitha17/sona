@@ -87,6 +87,10 @@ enum Pages {
               <div><dt>Storage</dt><dd>\(Esc.text(piece.storage))</dd></div>
             </dl>
             \(notes)
+            <form class="panel" method="post" action="/pieces/\(Esc.attr(piece.id))/photo" enctype="multipart/form-data">
+              \(camera(autosave: true))
+            </form>
+            \(cameraScript)
             <div class="actions">
               <a class="btn primary" href="/pieces/\(Esc.attr(piece.id))/edit">Edit</a>
               <a class="btn quiet" href="/">Back to the vault</a>
@@ -110,7 +114,7 @@ enum Pages {
             currentPhoto = """
             <div class="span-2">
               <img src="/media/\(Esc.attr(piece.id))?v=\(Esc.attr(piece.updatedAt))" alt="Current photograph of \(Esc.attr(piece.name))" style="width:180px;height:180px;object-fit:cover;border-radius:16px;border:1px solid var(--line)">
-              <p class="meta">Leave the file field empty to keep this photograph.</p>
+              <p class="meta">This is the photograph already saved. Take or choose another one to replace it.</p>
             </div>
             """
         } else {
@@ -142,7 +146,7 @@ enum Pages {
             <label><span class="label">Hallmark</span><input name="hallmark" maxlength="80" value="\(Esc.attr(piece?.hallmark ?? ""))" placeholder="BIS 916"></label>
             <label class="span-2"><span class="label">Notes</span><textarea name="notes" maxlength="2000">\(Esc.text(piece?.notes ?? ""))</textarea></label>
             \(currentPhoto)
-            <label class="span-2"><span class="label">Photograph</span><input name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></label>
+            \(camera(autosave: false))
           </div>
           <datalist id="karats">
             <option value="24"></option>
@@ -193,6 +197,7 @@ enum Pages {
           render();
         })();
         </script>
+        \(cameraScript)
         """
         return Shell.document(title: "\(title) · Aureum", active: editing ? "vault" : "add", body: body)
     }
@@ -254,6 +259,171 @@ enum Pages {
         """
         return Shell.document(title: "Aureum", active: "vault", body: body)
     }
+
+    private static func camera(autosave: Bool) -> String {
+        let note = autosave
+            ? "Take a picture and it is saved on this piece immediately."
+            : "Take a picture here, or choose one you already have. It is saved when you save the piece."
+        let shutter = autosave ? "Save picture" : "Use this picture"
+        return """
+        <div class="span-2 camera" data-camera data-autosave="\(autosave ? "1" : "0")">
+          <span class="label">Photograph</span>
+          <div class="viewfinder">
+            <video id="camera-live" playsinline autoplay muted hidden></video>
+            <img id="camera-still" alt="Photograph just taken" hidden>
+            <p class="viewfinder-empty" id="camera-empty">The camera preview shows here.</p>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn primary" id="camera-open">Take a picture</button>
+            <button type="button" class="btn primary" id="camera-shutter" hidden>\(shutter)</button>
+            <button type="button" class="btn quiet" id="camera-retake" hidden>Retake</button>
+            <label class="btn quiet file-btn">Choose a photo
+              <input id="camera-file" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+            </label>
+          </div>
+          <p class="meta" id="camera-note">\(note)</p>
+        </div>
+        """
+    }
+
+    private static let cameraScript = """
+    <script>
+    (function () {
+      const root = document.querySelector("[data-camera]");
+      if (!root) return;
+      const autosave = root.dataset.autosave === "1";
+      const live = document.getElementById("camera-live");
+      const still = document.getElementById("camera-still");
+      const empty = document.getElementById("camera-empty");
+      const open = document.getElementById("camera-open");
+      const shutter = document.getElementById("camera-shutter");
+      const retake = document.getElementById("camera-retake");
+      const fileInput = document.getElementById("camera-file");
+      const note = document.getElementById("camera-note");
+      const canvas = document.createElement("canvas");
+      let stream = null;
+
+      function say(text) {
+        if (note) note.textContent = text;
+      }
+
+      function stop() {
+        if (!stream) return;
+        stream.getTracks().forEach(function (track) { track.stop(); });
+        stream = null;
+        if (live) live.srcObject = null;
+      }
+
+      function showStill(url) {
+        stop();
+        if (live) live.hidden = true;
+        if (empty) empty.hidden = true;
+        if (still) {
+          still.hidden = false;
+          still.src = url;
+        }
+        if (open) open.hidden = true;
+        if (shutter) shutter.hidden = true;
+        if (retake) retake.hidden = false;
+      }
+
+      async function start() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          say("This browser cannot open the camera. Choose a photo instead.");
+          return;
+        }
+        const attempts = [
+          { video: { facingMode: { ideal: "environment" } }, audio: false },
+          { video: true, audio: false }
+        ];
+        stream = null;
+        for (let i = 0; i < attempts.length; i++) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia(attempts[i]);
+            break;
+          } catch (error) {
+            stream = null;
+          }
+        }
+        if (!stream || !live) {
+          say("Allow the camera to take a picture, or choose a photo instead.");
+          return;
+        }
+        live.hidden = false;
+        live.srcObject = stream;
+        if (empty) empty.hidden = true;
+        if (still) still.hidden = true;
+        if (open) open.hidden = true;
+        if (shutter) shutter.hidden = false;
+        if (retake) retake.hidden = true;
+        say(autosave ? "Line up the piece, then save the picture." : "Line up the piece, then use this picture.");
+        try { await live.play(); } catch (error) {}
+      }
+
+      function capture() {
+        if (!stream || !live || !live.videoWidth) {
+          say("The camera is not ready yet.");
+          return;
+        }
+        const scale = Math.min(1, 1600 / Math.max(live.videoWidth, live.videoHeight));
+        canvas.width = Math.round(live.videoWidth * scale);
+        canvas.height = Math.round(live.videoHeight * scale);
+        const context = canvas.getContext("2d");
+        if (!context) {
+          say("The picture could not be saved. Try again.");
+          return;
+        }
+        context.drawImage(live, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function (blob) {
+          if (!blob || !fileInput) {
+            say("The picture could not be saved. Try again.");
+            return;
+          }
+          const picture = new File([blob], "piece.jpg", { type: "image/jpeg" });
+          const transfer = new DataTransfer();
+          transfer.items.add(picture);
+          fileInput.files = transfer.files;
+          showStill(URL.createObjectURL(blob));
+          if (autosave) {
+            say("Saving the picture…");
+            const form = root.closest("form");
+            if (form) form.submit();
+            return;
+          }
+          say("Picture ready. It is saved when you save the piece.");
+        }, "image/jpeg", 0.92);
+      }
+
+      if (open) open.addEventListener("click", function () { start(); });
+      if (shutter) shutter.addEventListener("click", capture);
+      if (retake) {
+        retake.addEventListener("click", function () {
+          if (fileInput) fileInput.value = "";
+          if (still) {
+            still.hidden = true;
+            still.removeAttribute("src");
+          }
+          start();
+        });
+      }
+      if (fileInput) {
+        fileInput.addEventListener("change", function () {
+          const file = fileInput.files && fileInput.files[0];
+          if (!file) return;
+          showStill(URL.createObjectURL(file));
+          if (autosave) {
+            say("Saving the picture…");
+            const form = root.closest("form");
+            if (form) form.submit();
+            return;
+          }
+          say("Photo ready. It is saved when you save the piece.");
+        });
+      }
+      window.addEventListener("pagehide", stop);
+    })();
+    </script>
+    """
 
     private static func stats(_ totals: Totals, currency: String) -> String {
         let changeClass = totals.unrealized < 0 ? "down" : "up"

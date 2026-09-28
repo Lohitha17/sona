@@ -339,6 +339,42 @@ enum Shell {
     .span-2 { grid-column: span 2; }
     label .label { margin-bottom: 6px; }
     .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+    .camera { display: flex; flex-direction: column; gap: 10px; }
+    .viewfinder {
+      position: relative;
+      width: min(100%, 520px);
+      aspect-ratio: 4 / 3;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #100d0a;
+      border: 1px solid var(--line);
+    }
+    .viewfinder video, .viewfinder img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .viewfinder video:not([hidden]), .viewfinder img:not([hidden]) { display: block; }
+    .viewfinder-empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      margin: 0;
+      color: var(--dim);
+    }
+    .file-btn { position: relative; cursor: pointer; }
+    .file-btn input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
     .estimate {
       margin-top: 8px;
       padding: 12px 14px;

@@ -454,6 +454,29 @@ async def update_piece(
         return _piece_out(updated, _settings(conn)["gold_rate_24k"])
 
 
+@app.post("/api/pieces/{piece_id}/image")
+async def replace_image(piece_id: str, image: UploadFile = File(...)):
+    stored = await _store_image(image)
+    if stored is None:
+        raise HTTPException(status_code=422, detail="Take or choose a photograph first.")
+    with connect() as conn:
+        row = _get_row(conn, piece_id)
+        if row is None:
+            _delete_image(stored)
+            raise HTTPException(status_code=404, detail="That piece is not in the vault.")
+        previous = row["image_file"]
+        stamp = _now()
+        conn.execute(
+            "UPDATE pieces SET image_file = ?, updated_at = ? WHERE id = ?",
+            (stored, stamp, piece_id),
+        )
+        conn.commit()
+        updated = _get_row(conn, piece_id)
+        payload = _piece_out(updated, _settings(conn)["gold_rate_24k"])
+    _delete_image(previous)
+    return payload
+
+
 @app.post("/api/pieces/{piece_id}/delete")
 def delete_piece(piece_id: str):
     with connect() as conn:
