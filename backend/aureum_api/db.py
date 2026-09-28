@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS pieces (
     hallmark TEXT NOT NULL,
     notes TEXT NOT NULL,
     image_file TEXT,
+    bill_file TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -80,6 +81,9 @@ def connect() -> sqlite3.Connection:
 def init_db() -> None:
     with connect() as conn:
         conn.executescript(SCHEMA)
+        columns = {info[1] for info in conn.execute("PRAGMA table_info(pieces)")}
+        if "bill_file" not in columns:
+            conn.execute("ALTER TABLE pieces ADD COLUMN bill_file TEXT")
         row = conn.execute("SELECT id FROM settings WHERE id = 1").fetchone()
         if row is None:
             conn.execute(

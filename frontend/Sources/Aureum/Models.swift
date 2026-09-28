@@ -22,6 +22,7 @@ struct Piece: Codable, Sendable {
     var hallmark: String
     var notes: String
     var hasImage: Bool
+    var hasBill: Bool
     var fineWeightG: Double
     var goldValue: Double
     var estimatedValue: Double

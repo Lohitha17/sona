@@ -55,7 +55,7 @@ cd backend
 
 ## What you can record
 
-- Name, category, and a photograph. Take one with the camera, or choose a JPEG, PNG, WEBP, or GIF up to 8 MB. On a piece that is already saved, the picture is stored as soon as you capture it.
+- Name, category, a photograph of the piece, and a photograph of the bill. Take either with the camera, or choose a JPEG, PNG, WEBP, or GIF up to 8 MB. On a piece that is already saved, each picture is stored as soon as you capture it.
 - Gross weight, stone weight, karat, and wastage
 - Making charge, purchase price, hallmark, acquired date, and where the piece is kept
 - A 24K rate in INR, USD, EUR, GBP, AED, or SAR

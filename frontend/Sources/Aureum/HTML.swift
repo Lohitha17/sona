@@ -358,11 +358,11 @@ enum Shell {
     .viewfinder-empty {
       position: absolute;
       inset: 0;
-      display: grid;
       place-items: center;
       margin: 0;
       color: var(--dim);
     }
+    .viewfinder-empty:not([hidden]) { display: grid; }
     .file-btn { position: relative; cursor: pointer; }
     .file-btn input {
       position: absolute;

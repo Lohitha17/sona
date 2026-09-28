@@ -99,19 +99,15 @@ enum Aureum {
         }
 
         router.post("pieces/:id/photo") { request, context -> Page in
-            let id = try context.parameters.require("id")
-            guard safePieceID(id) else {
-                return .html(Pages.failureMessage("That address is not a piece.", back: "/", backLabel: "Back to the vault"))
-            }
-            do {
-                let result = try await api.forward(request, path: "/api/pieces/\(id)/image")
-                if (200..<300).contains(result.status) {
-                    return .redirect("/pieces/\(id)")
-                }
-                return .html(Pages.failureMessage(api.errorMessage(result.data), back: "/pieces/\(id)", backLabel: "Back to the piece"))
-            } catch {
-                return .html(Pages.failure(error))
-            }
+            await saveAttachment(api: api, request: request, context: context, path: "image")
+        }
+
+        router.post("pieces/:id/bill") { request, context -> Page in
+            await saveAttachment(api: api, request: request, context: context, path: "bill")
+        }
+
+        router.get("bills/:id") { _, context -> Page in
+            await attachment(api: api, context: context, path: "bill")
         }
 
         router.post("pieces/:id/delete") { request, context -> Page in
@@ -165,6 +161,46 @@ enum Aureum {
             }
             throw error
         }
+    }
+}
+
+private func saveAttachment(api: APIClient, request: Request, context: some RequestContext, path: String) async -> Page {
+    let id: String
+    do {
+        id = try context.parameters.require("id")
+    } catch {
+        return .html(Pages.failure(error))
+    }
+    guard safePieceID(id) else {
+        return .html(Pages.failureMessage("That address is not a piece.", back: "/", backLabel: "Back to the vault"))
+    }
+    do {
+        let result = try await api.forward(request, path: "/api/pieces/\(id)/\(path)")
+        if (200..<300).contains(result.status) {
+            return .redirect("/pieces/\(id)")
+        }
+        return .html(Pages.failureMessage(api.errorMessage(result.data), back: "/pieces/\(id)", backLabel: "Back to the piece"))
+    } catch {
+        return .html(Pages.failure(error))
+    }
+}
+
+private func attachment(api: APIClient, context: some RequestContext, path: String) async -> Page {
+    let id: String
+    do {
+        id = try context.parameters.require("id")
+    } catch {
+        return .bytes(status: 404, type: "text/plain", data: Data("Not found".utf8), cache: "no-store")
+    }
+    guard safePieceID(id) else {
+        return .bytes(status: 404, type: "text/plain", data: Data("Not found".utf8), cache: "no-store")
+    }
+    do {
+        let result = try await api.fetchData("/api/pieces/\(id)/\(path)")
+        let type = result.contentType.split(separator: ";").first.map(String.init) ?? "application/octet-stream"
+        return .bytes(status: result.status, type: type, data: result.data, cache: "public, max-age=86400")
+    } catch {
+        return .bytes(status: 502, type: "text/plain", data: Data("Ledger unavailable".utf8), cache: "no-store")
     }
 }
 

@@ -110,6 +110,30 @@ def test_replace_image_saves_the_new_photograph():
     assert empty.status_code == 422
 
 
+def test_bill_is_saved_with_the_piece_and_can_be_replaced():
+    client = TestClient(app)
+    created = client.post(
+        "/api/pieces",
+        data=dict(FORM, name="With a bill"),
+        files={"bill": ("bill.jpg", io.BytesIO(JPEG), "image/jpeg")},
+    )
+    assert created.status_code == 201, created.text
+    piece_id = created.json()["id"]
+    assert created.json()["has_bill"] is True
+    assert created.json()["has_image"] is False
+
+    image = client.get(f"/api/pieces/{piece_id}/bill")
+    assert image.status_code == 200
+    assert image.content.startswith(b"\xff\xd8\xff")
+
+    replaced = client.post(
+        f"/api/pieces/{piece_id}/bill",
+        files={"bill": ("bill2.jpg", io.BytesIO(JPEG), "image/jpeg")},
+    )
+    assert replaced.status_code == 200
+    assert replaced.json()["has_bill"] is True
+
+
 def test_rejects_non_image_upload():
     client = TestClient(app)
     response = client.post(

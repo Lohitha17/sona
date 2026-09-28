@@ -8,13 +8,11 @@ enum Pages {
         let title = filtered ? "Matching pieces" : "The vault"
         let lede: String
         if totals.pieces == 0 && !filtered {
-            lede = "Add a photograph, a weight, and a karat. Aureum turns that into fine gold and a total."
+            lede = "Add a photograph, a bill, a weight, and a karat."
         } else if totals.pieces == 0 {
             lede = "Nothing in the vault matches this search."
-        } else if totals.pieces == 1 {
-            lede = "1 piece, valued at your 24K rate."
         } else {
-            lede = "\(totals.pieces) pieces, valued at your 24K rate."
+            lede = ""
         }
         let banner = rateSaved
             ? "<p class=\"banner\">Gold rate updated. Every piece has been revalued.</p>"
@@ -37,7 +35,7 @@ enum Pages {
           <div>
             <p class="eyebrow">Private ledger</p>
             <h1>\(title)</h1>
-            <p class="lede">\(lede)</p>
+            \(lede.isEmpty ? "" : "<p class=\"lede\">\(lede)</p>")
           </div>
           <a class="rate-pill" href="/rate">\(Esc.text(Format.rateLine(settings)))</a>
         </header>
@@ -87,8 +85,12 @@ enum Pages {
               <div><dt>Storage</dt><dd>\(Esc.text(piece.storage))</dd></div>
             </dl>
             \(notes)
+            \(piece.hasBill ? savedThumb(src: "/bills/\(Esc.attr(piece.id))?v=\(Esc.attr(piece.updatedAt))", alt: "Bill for \(piece.name)", caption: "This bill is saved on the piece.") : "")
             <form class="panel" method="post" action="/pieces/\(Esc.attr(piece.id))/photo" enctype="multipart/form-data">
-              \(camera(autosave: true))
+              \(camera(field: "image", label: "Photograph", openLabel: "Take a picture", shutterLabel: "Save picture", autosave: true, note: "Take a picture and it is saved on this piece immediately.", lineup: "Line up the piece, then save the picture.", ready: "Picture ready. It is saved when you save the piece."))
+            </form>
+            <form class="panel" method="post" action="/pieces/\(Esc.attr(piece.id))/bill" enctype="multipart/form-data">
+              \(camera(field: "bill", label: "Bill", openLabel: "Take the bill", shutterLabel: "Save bill", autosave: true, note: "Take a picture of the bill and it is saved on this piece immediately.", lineup: "Line up the bill, then save it.", ready: "Bill ready. It is saved when you save the piece."))
             </form>
             \(cameraScript)
             <div class="actions">
@@ -120,6 +122,16 @@ enum Pages {
         } else {
             currentPhoto = ""
         }
+        let currentBill: String
+        if let piece, piece.hasBill {
+            currentBill = savedThumb(
+                src: "/bills/\(Esc.attr(piece.id))?v=\(Esc.attr(piece.updatedAt))",
+                alt: "Current bill for \(piece.name)",
+                caption: "This is the bill already saved. Take or choose another one to replace it."
+            )
+        } else {
+            currentBill = ""
+        }
         let categoryOptions = meta.categories.map { key in
             option(key, Catalogue.label(key), selected: piece?.category ?? "necklace")
         }.joined()
@@ -146,7 +158,9 @@ enum Pages {
             <label><span class="label">Hallmark</span><input name="hallmark" maxlength="80" value="\(Esc.attr(piece?.hallmark ?? ""))" placeholder="BIS 916"></label>
             <label class="span-2"><span class="label">Notes</span><textarea name="notes" maxlength="2000">\(Esc.text(piece?.notes ?? ""))</textarea></label>
             \(currentPhoto)
-            \(camera(autosave: false))
+            \(camera(field: "image", label: "Photograph", openLabel: "Take a picture", shutterLabel: "Use this picture", autosave: false, note: "Take a picture here, or choose one you already have. It is saved when you save the piece.", lineup: "Line up the piece, then use this picture.", ready: "Picture ready. It is saved when you save the piece."))
+            \(currentBill)
+            \(camera(field: "bill", label: "Bill", openLabel: "Take the bill", shutterLabel: "Use this bill", autosave: false, note: "Photograph the jeweller’s bill. It is saved when you save the piece.", lineup: "Line up the bill, then use this picture.", ready: "Bill ready. It is saved when you save the piece."))
           </div>
           <datalist id="karats">
             <option value="24"></option>
@@ -260,28 +274,42 @@ enum Pages {
         return Shell.document(title: "Aureum", active: "vault", body: body)
     }
 
-    private static func camera(autosave: Bool) -> String {
-        let note = autosave
-            ? "Take a picture and it is saved on this piece immediately."
-            : "Take a picture here, or choose one you already have. It is saved when you save the piece."
-        let shutter = autosave ? "Save picture" : "Use this picture"
-        return """
-        <div class="span-2 camera" data-camera data-autosave="\(autosave ? "1" : "0")">
-          <span class="label">Photograph</span>
+    private static func savedThumb(src: String, alt: String, caption: String) -> String {
+        """
+        <div class="span-2">
+          <img src="\(Esc.attr(src))" alt="\(Esc.attr(alt))" style="width:180px;height:180px;object-fit:cover;border-radius:16px;border:1px solid var(--line)">
+          <p class="meta">\(Esc.text(caption))</p>
+        </div>
+        """
+    }
+
+    private static func camera(
+        field: String,
+        label: String,
+        openLabel: String,
+        shutterLabel: String,
+        autosave: Bool,
+        note: String,
+        lineup: String,
+        ready: String
+    ) -> String {
+        """
+        <div class="span-2 camera" data-camera data-autosave="\(autosave ? "1" : "0")" data-lineup="\(Esc.attr(lineup))" data-ready="\(Esc.attr(ready))" data-filename="\(Esc.attr(field)).jpg">
+          <span class="label">\(Esc.text(label))</span>
           <div class="viewfinder">
-            <video id="camera-live" playsinline autoplay muted hidden></video>
-            <img id="camera-still" alt="Photograph just taken" hidden>
-            <p class="viewfinder-empty" id="camera-empty">The camera preview shows here.</p>
+            <video class="camera-live" playsinline autoplay muted hidden></video>
+            <img class="camera-still" alt="\(Esc.attr(label)) just taken" hidden>
+            <p class="viewfinder-empty camera-empty">The camera preview shows here.</p>
           </div>
           <div class="actions">
-            <button type="button" class="btn primary" id="camera-open">Take a picture</button>
-            <button type="button" class="btn primary" id="camera-shutter" hidden>\(shutter)</button>
-            <button type="button" class="btn quiet" id="camera-retake" hidden>Retake</button>
+            <button type="button" class="btn primary camera-open">\(Esc.text(openLabel))</button>
+            <button type="button" class="btn primary camera-shutter" hidden>\(Esc.text(shutterLabel))</button>
+            <button type="button" class="btn quiet camera-retake" hidden>Retake</button>
             <label class="btn quiet file-btn">Choose a photo
-              <input id="camera-file" name="image" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+              <input class="camera-file" name="\(Esc.attr(field))" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
             </label>
           </div>
-          <p class="meta" id="camera-note">\(note)</p>
+          <p class="meta camera-note">\(Esc.text(note))</p>
         </div>
         """
     }
@@ -289,138 +317,149 @@ enum Pages {
     private static let cameraScript = """
     <script>
     (function () {
-      const root = document.querySelector("[data-camera]");
-      if (!root) return;
-      const autosave = root.dataset.autosave === "1";
-      const live = document.getElementById("camera-live");
-      const still = document.getElementById("camera-still");
-      const empty = document.getElementById("camera-empty");
-      const open = document.getElementById("camera-open");
-      const shutter = document.getElementById("camera-shutter");
-      const retake = document.getElementById("camera-retake");
-      const fileInput = document.getElementById("camera-file");
-      const note = document.getElementById("camera-note");
-      const canvas = document.createElement("canvas");
-      let stream = null;
+      const cameras = document.querySelectorAll("[data-camera]");
+      if (!cameras.length) return;
+      const streams = [];
 
-      function say(text) {
-        if (note) note.textContent = text;
-      }
+      cameras.forEach(function (root) {
+        const autosave = root.dataset.autosave === "1";
+        const lineup = root.dataset.lineup || "Line up the picture, then save it.";
+        const ready = root.dataset.ready || "Picture ready. It is saved when you save the piece.";
+        const filename = root.dataset.filename || "piece.jpg";
+        const live = root.querySelector(".camera-live");
+        const still = root.querySelector(".camera-still");
+        const empty = root.querySelector(".camera-empty");
+        const open = root.querySelector(".camera-open");
+        const shutter = root.querySelector(".camera-shutter");
+        const retake = root.querySelector(".camera-retake");
+        const fileInput = root.querySelector(".camera-file");
+        const note = root.querySelector(".camera-note");
+        const canvas = document.createElement("canvas");
+        let stream = null;
 
-      function stop() {
-        if (!stream) return;
-        stream.getTracks().forEach(function (track) { track.stop(); });
-        stream = null;
-        if (live) live.srcObject = null;
-      }
-
-      function showStill(url) {
-        stop();
-        if (live) live.hidden = true;
-        if (empty) empty.hidden = true;
-        if (still) {
-          still.hidden = false;
-          still.src = url;
+        function say(text) {
+          if (note) note.textContent = text;
         }
-        if (open) open.hidden = true;
-        if (shutter) shutter.hidden = true;
-        if (retake) retake.hidden = false;
-      }
 
-      async function start() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          say("This browser cannot open the camera. Choose a photo instead.");
-          return;
+        function stop() {
+          if (!stream) return;
+          stream.getTracks().forEach(function (track) { track.stop(); });
+          stream = null;
+          if (live) live.srcObject = null;
         }
-        const attempts = [
-          { video: { facingMode: { ideal: "environment" } }, audio: false },
-          { video: true, audio: false }
-        ];
-        stream = null;
-        for (let i = 0; i < attempts.length; i++) {
-          try {
-            stream = await navigator.mediaDevices.getUserMedia(attempts[i]);
-            break;
-          } catch (error) {
-            stream = null;
+        streams.push(stop);
+
+        function showStill(url) {
+          stop();
+          if (live) live.hidden = true;
+          if (empty) empty.hidden = true;
+          if (still) {
+            still.hidden = false;
+            still.src = url;
           }
+          if (open) open.hidden = true;
+          if (shutter) shutter.hidden = true;
+          if (retake) retake.hidden = false;
         }
-        if (!stream || !live) {
-          say("Allow the camera to take a picture, or choose a photo instead.");
-          return;
-        }
-        live.hidden = false;
-        live.srcObject = stream;
-        if (empty) empty.hidden = true;
-        if (still) still.hidden = true;
-        if (open) open.hidden = true;
-        if (shutter) shutter.hidden = false;
-        if (retake) retake.hidden = true;
-        say(autosave ? "Line up the piece, then save the picture." : "Line up the piece, then use this picture.");
-        try { await live.play(); } catch (error) {}
-      }
 
-      function capture() {
-        if (!stream || !live || !live.videoWidth) {
-          say("The camera is not ready yet.");
-          return;
+        async function start() {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            say("This browser cannot open the camera. Choose a photo instead.");
+            return;
+          }
+          const attempts = [
+            { video: { facingMode: { ideal: "environment" } }, audio: false },
+            { video: true, audio: false }
+          ];
+          stream = null;
+          for (let i = 0; i < attempts.length; i++) {
+            try {
+              stream = await navigator.mediaDevices.getUserMedia(attempts[i]);
+              break;
+            } catch (error) {
+              stream = null;
+            }
+          }
+          if (!stream || !live) {
+            say("Allow the camera to take a picture, or choose a photo instead.");
+            return;
+          }
+          live.hidden = false;
+          live.srcObject = stream;
+          if (empty) empty.hidden = true;
+          if (still) still.hidden = true;
+          if (open) open.hidden = true;
+          if (shutter) shutter.hidden = false;
+          if (retake) retake.hidden = true;
+          say(lineup);
+          try { await live.play(); } catch (error) {}
         }
-        const scale = Math.min(1, 1600 / Math.max(live.videoWidth, live.videoHeight));
-        canvas.width = Math.round(live.videoWidth * scale);
-        canvas.height = Math.round(live.videoHeight * scale);
-        const context = canvas.getContext("2d");
-        if (!context) {
-          say("The picture could not be saved. Try again.");
-          return;
-        }
-        context.drawImage(live, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(function (blob) {
-          if (!blob || !fileInput) {
+
+        function capture() {
+          if (!stream || !live || !live.videoWidth) {
+            say("The camera is not ready yet.");
+            return;
+          }
+          const scale = Math.min(1, 1600 / Math.max(live.videoWidth, live.videoHeight));
+          canvas.width = Math.round(live.videoWidth * scale);
+          canvas.height = Math.round(live.videoHeight * scale);
+          const context = canvas.getContext("2d");
+          if (!context) {
             say("The picture could not be saved. Try again.");
             return;
           }
-          const picture = new File([blob], "piece.jpg", { type: "image/jpeg" });
-          const transfer = new DataTransfer();
-          transfer.items.add(picture);
-          fileInput.files = transfer.files;
-          showStill(URL.createObjectURL(blob));
-          if (autosave) {
-            say("Saving the picture…");
-            const form = root.closest("form");
-            if (form) form.submit();
-            return;
-          }
-          say("Picture ready. It is saved when you save the piece.");
-        }, "image/jpeg", 0.92);
-      }
+          context.drawImage(live, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(function (blob) {
+            if (!blob || !fileInput) {
+              say("The picture could not be saved. Try again.");
+              return;
+            }
+            const picture = new File([blob], filename, { type: "image/jpeg" });
+            const transfer = new DataTransfer();
+            transfer.items.add(picture);
+            fileInput.files = transfer.files;
+            showStill(URL.createObjectURL(blob));
+            if (autosave) {
+              say("Saving…");
+              const form = root.closest("form");
+              if (form) form.submit();
+              return;
+            }
+            say(ready);
+          }, "image/jpeg", 0.92);
+        }
 
-      if (open) open.addEventListener("click", function () { start(); });
-      if (shutter) shutter.addEventListener("click", capture);
-      if (retake) {
-        retake.addEventListener("click", function () {
-          if (fileInput) fileInput.value = "";
-          if (still) {
-            still.hidden = true;
-            still.removeAttribute("src");
-          }
-          start();
-        });
-      }
-      if (fileInput) {
-        fileInput.addEventListener("change", function () {
-          const file = fileInput.files && fileInput.files[0];
-          if (!file) return;
-          showStill(URL.createObjectURL(file));
-          if (autosave) {
-            say("Saving the picture…");
-            const form = root.closest("form");
-            if (form) form.submit();
-            return;
-          }
-          say("Photo ready. It is saved when you save the piece.");
-        });
-      }
-      window.addEventListener("pagehide", stop);
+        if (open) open.addEventListener("click", function () { start(); });
+        if (shutter) shutter.addEventListener("click", capture);
+        if (retake) {
+          retake.addEventListener("click", function () {
+            if (fileInput) fileInput.value = "";
+            if (still) {
+              still.hidden = true;
+              still.removeAttribute("src");
+            }
+            start();
+          });
+        }
+        if (fileInput) {
+          fileInput.addEventListener("change", function () {
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) return;
+            showStill(URL.createObjectURL(file));
+            if (autosave) {
+              say("Saving…");
+              const form = root.closest("form");
+              if (form) form.submit();
+              return;
+            }
+            say(ready);
+          });
+        }
+      });
+
+      window.addEventListener("pagehide", function () {
+        streams.forEach(function (stop) { stop(); });
+      });
     })();
     </script>
     """
@@ -491,7 +530,7 @@ enum Pages {
           <div class="pad">
             <p class="label">\(Esc.text(Catalogue.label(piece.category)))</p>
             <h2>\(Esc.text(piece.name))</h2>
-            <p class="meta">\(Esc.text(Format.grams(piece.netWeightG))) · \(Esc.text(Format.karat(piece.karat)))</p>
+            <p class="meta">\(Esc.text(Format.grams(piece.netWeightG))) · \(Esc.text(Format.karat(piece.karat)))\(piece.hasBill ? " · Bill saved" : "")</p>
             <strong class="money">\(Esc.text(Format.money(piece.estimatedValue, currency: currency)))</strong>
           </div>
         </a>
