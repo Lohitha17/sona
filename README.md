@@ -1,0 +1,61 @@
+# Aureum
+
+A private ledger for gold jewellery. Each piece keeps a photograph, a weight, a karat, and what it is worth at a 24K rate you enter. The vault totals fine gold, making charges, and the change since you bought the pieces.
+
+The interface is a Swift server. The ledger is a Python API. They run as two local processes, with no account and no live market feed.
+
+## Valuation
+
+Fine gold (grams) = (gross weight − stone weight) × (karat ÷ 24) × (1 + wastage ÷ 100)
+
+Gold value = fine gold × your 24K price per gram
+
+Vault value = gold value + making charge
+
+Change = vault value − purchase price
+
+Lower karats are scaled from the 24K rate. Wastage is the extra gold a jeweller sometimes charges on the invoice. Leave it at 0 when the bill did not include it. The making charge is a flat amount, not a rate per gram.
+
+## Run it
+
+You need Python 3.11+ and Swift 6.
+
+```bash
+cd backend
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/uvicorn aureum_api.main:app --host 127.0.0.1 --port 8741
+```
+
+In another terminal:
+
+```bash
+cd frontend
+swift run Aureum
+```
+
+Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+
+`scripts/dev.sh` starts both. The first Swift build downloads Hummingbird and takes a while.
+
+The API also serves its own docs at [http://127.0.0.1:8741/docs](http://127.0.0.1:8741/docs).
+
+On first launch the vault includes six sample pieces and a sample 24K rate of ₹9,860 per gram. Replace that rate with the price you actually want to use. Photographs, weights, and prices live in `backend/data/`, which is created locally and is not part of the source tree.
+
+`PORT` changes the Swift interface port (default `43123`). `AUREUM_API` is the ledger URL the interface calls (default `http://127.0.0.1:8741`).
+
+## Tests
+
+```bash
+cd backend
+.venv/bin/pytest
+```
+
+## What you can record
+
+- Name, category, and a photograph (JPEG, PNG, WEBP, or GIF, up to 8 MB)
+- Gross weight, stone weight, karat, and wastage
+- Making charge, purchase price, hallmark, acquired date, and where the piece is kept
+- A 24K rate in INR, USD, EUR, GBP, AED, or SAR
+
+Changing the rate revalues every piece. Search covers name, hallmark, notes, and where a piece is kept.
