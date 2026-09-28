@@ -96,9 +96,6 @@ enum Format {
         }
     }
 
-    static func rateLine(_ settings: Settings) -> String {
-        "\(money(settings.goldRate24K, currency: settings.currency)) / g · 24K"
-    }
 }
 
 enum Catalogue {

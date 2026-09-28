@@ -1,7 +1,7 @@
 import Foundation
 
 enum Pages {
-    static func vault(_ summary: Summary, rateSaved: Bool) -> String {
+    static func vault(_ summary: Summary) -> String {
         let settings = summary.settings
         let totals = summary.totals
         let filtered = !summary.query.isEmpty || !summary.category.isEmpty
@@ -14,9 +14,6 @@ enum Pages {
         } else {
             lede = ""
         }
-        let banner = rateSaved
-            ? "<p class=\"banner\">Gold rate updated. Every piece has been revalued.</p>"
-            : ""
         let cards: String
         if summary.pieces.isEmpty {
             cards = """
@@ -30,13 +27,11 @@ enum Pages {
             cards = "<section class=\"grid\">\(summary.pieces.map { card($0, currency: settings.currency) }.joined())</section>"
         }
         let body = """
-        \(banner)
         <header class="top">
           <div>
             <h1>\(title)</h1>
             \(lede.isEmpty ? "" : "<p class=\"lede\">\(lede)</p>")
           </div>
-          <a class="rate-pill" href="/rate">\(Esc.text(Format.rateLine(settings)))</a>
         </header>
         \(stats(totals, currency: settings.currency))
         \(toolbar(summary))
@@ -61,7 +56,7 @@ enum Pages {
         let body = """
         <p class="eyebrow">\(Esc.text(Catalogue.label(piece.category)))</p>
         <h1>\(Esc.text(piece.name))</h1>
-        <p class="lede">Kept in \(Esc.text(piece.storage)). Valued at \(Esc.text(Format.rateLine(settings))).</p>
+        <p class="lede">Kept in \(Esc.text(piece.storage)).</p>
         <div class="hero" style="margin-top:22px">
           \(photo)
           <div class="stack">
@@ -213,30 +208,6 @@ enum Pages {
         \(cameraScript)
         """
         return Shell.document(title: "\(title) · Aureum", active: editing ? "vault" : "add", body: body)
-    }
-
-    static func rate(_ settings: Settings, meta: Meta, error: String?) -> String {
-        let banner = error.map { "<p class=\"banner warn\">\(Esc.text($0))</p>" } ?? ""
-        let options = meta.currencies.map { code in
-            option(code, code, selected: settings.currency)
-        }.joined()
-        let body = """
-        \(banner)
-        <p class="eyebrow">Your price</p>
-        <h1>Gold rate</h1>
-        <p class="lede">Aureum does not fetch a live market price. Enter the 24K rate per gram you want the vault valued at. 22K and 18K pieces are scaled from that rate.</p>
-        <form class="panel" style="margin-top:22px;max-width:520px" method="post" action="/rate">
-          <div class="form-grid">
-            <label><span class="label">Currency</span><select name="currency">\(options)</select></label>
-            <label><span class="label">24K price per gram</span><input name="gold_rate_24k" type="number" min="0.01" step="0.01" required value="\(Esc.attr(Format.plain(settings.goldRate24K)))"></label>
-          </div>
-          <div class="actions">
-            <button class="btn primary" type="submit">Save rate</button>
-            <a class="btn quiet" href="/">Cancel</a>
-          </div>
-        </form>
-        """
-        return Shell.document(title: "Gold rate · Aureum", active: "rate", body: body)
     }
 
     static func failure(_ error: Error, back: String = "/", backLabel: String = "Back to the vault") -> String {

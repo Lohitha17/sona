@@ -1,6 +1,6 @@
 # Aureum
 
-A private ledger for gold jewellery. Each piece keeps a photograph, a weight, a karat, and what it is worth at a 24K rate you enter. The vault totals fine gold, making charges, and the change since you bought the pieces.
+A ledger for gold jewellery. Each piece keeps a photograph, a bill, a weight, and a karat. The vault totals fine gold, making charges, and the change since you bought the pieces.
 
 The interface is a Swift server. The ledger is a Python API. They run as two local processes, with no account and no live market feed.
 
@@ -42,7 +42,7 @@ If either command reports “address already in use”, that part is already run
 
 The API also serves its own docs at [http://127.0.0.1:8741/docs](http://127.0.0.1:8741/docs).
 
-On first launch the vault includes six sample pieces and a sample 24K rate of ₹9,860 per gram. Replace that rate with the price you actually want to use. Photographs, weights, and prices live in `backend/data/`, which is created locally and is not part of the source tree.
+On first launch the vault includes six sample pieces. Photographs, weights, and prices live in `backend/data/`, which is created locally and is not part of the source tree.
 
 `PORT` changes the Swift interface port (default `43123`). `AUREUM_API` is the ledger URL the interface calls (default `http://127.0.0.1:8741`).
 
@@ -58,6 +58,5 @@ cd backend
 - Name, category, a photograph of the piece, and a photograph of the bill. Take either with the camera, or choose a JPEG, PNG, WEBP, or GIF up to 8 MB. On a piece that is already saved, each picture is stored as soon as you capture it.
 - Gross weight, stone weight, karat, and wastage
 - Making charge, purchase price, hallmark, acquired date, and where the piece is kept
-- A 24K rate in INR, USD, EUR, GBP, AED, or SAR
 
-Changing the rate revalues every piece. Search covers name, hallmark, notes, and where a piece is kept.
+Search covers name, hallmark, notes, and where a piece is kept.

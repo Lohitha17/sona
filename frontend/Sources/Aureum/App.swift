@@ -25,7 +25,7 @@ enum Aureum {
                     q: Query.one(request, "q"),
                     category: Query.one(request, "category")
                 )
-                return .html(Pages.vault(summary, rateSaved: Query.one(request, "saved") == "rate"))
+                return .html(Pages.vault(summary))
             } catch {
                 return .html(Pages.failure(error))
             }
@@ -33,30 +33,6 @@ enum Aureum {
 
         router.get("new") { _, _ -> Page in
             await formPage(api: api, piece: nil, error: nil)
-        }
-
-        router.get("rate") { _, _ -> Page in
-            do {
-                async let settings = api.settings()
-                async let meta = api.meta()
-                return .html(Pages.rate(try await settings, meta: try await meta, error: nil))
-            } catch {
-                return .html(Pages.failure(error, back: "/rate", backLabel: "Try again"))
-            }
-        }
-
-        router.post("rate") { request, _ -> Page in
-            do {
-                let result = try await api.forward(request, path: "/api/settings")
-                if (200..<300).contains(result.status) {
-                    return .redirect("/?saved=rate")
-                }
-                let meta = try await api.meta()
-                let settings = try await api.settings()
-                return .html(Pages.rate(settings, meta: meta, error: api.errorMessage(result.data)))
-            } catch {
-                return .html(Pages.failure(error, back: "/rate", backLabel: "Back to the rate"))
-            }
         }
 
         router.post("pieces") { request, _ -> Page in

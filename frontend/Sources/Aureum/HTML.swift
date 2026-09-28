@@ -104,9 +104,8 @@ enum Shell {
               <nav>
                 <a href="/" class="\(active == "vault" ? "active" : "")">Vault</a>
                 <a href="/new" class="\(active == "add" ? "active" : "")">Add piece</a>
-                <a href="/rate" class="\(active == "rate" ? "active" : "")">Gold rate</a>
               </nav>
-              <p class="aside-note">A private count of weight, purity, and what the pieces are worth at your rate.</p>
+              <p class="aside-note">A count of weight, purity, and what the pieces are worth.</p>
             </header>
             <main>\(body)</main>
           </div>
@@ -212,19 +211,6 @@ enum Shell {
       letter-spacing: -0.03em;
     }
     .lede { color: var(--muted); margin: 10px 0 0; max-width: 46ch; line-height: 1.5; }
-    .rate-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      text-decoration: none;
-      border: 1px solid var(--line);
-      background: rgba(36, 28, 22, 0.8);
-      color: var(--gold-2);
-      border-radius: 999px;
-      padding: 10px 14px;
-      white-space: nowrap;
-      font-size: 14px;
-    }
     .stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
