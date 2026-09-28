@@ -45,7 +45,7 @@ enum Pages {
           </aside>
         </div>
         """
-        return Shell.document(title: "Aureum · Vault", active: "vault", body: body)
+        return Shell.document(title: "Sona · Vault", active: "vault", body: body)
     }
 
     static func detail(_ piece: Piece, settings: Settings) -> String {
@@ -97,7 +97,7 @@ enum Pages {
           </div>
         </div>
         """
-        return Shell.document(title: "\(piece.name) · Aureum", active: "vault", body: body)
+        return Shell.document(title: "\(piece.name) · Sona", active: "vault", body: body)
     }
 
     static func form(piece: Piece?, settings: Settings, meta: Meta, error: String?) -> String {
@@ -200,7 +200,7 @@ enum Pages {
         </script>
         \(cameraScript)
         """
-        return Shell.document(title: "\(title) · Aureum", active: editing ? "vault" : "add", body: body)
+        return Shell.document(title: "\(title) · Sona", active: editing ? "vault" : "add", body: body)
     }
 
     static func failure(_ error: Error, back: String = "/", backLabel: String = "Back to the vault") -> String {
@@ -214,7 +214,7 @@ enum Pages {
             message = text
             hint = ""
         case APIError.decode(let text):
-            message = "The ledger replied in a shape Aureum did not understand."
+            message = "The ledger replied in a shape Sona did not understand."
             hint = text
         default:
             message = "Something went wrong while talking to the ledger."
@@ -234,7 +234,7 @@ enum Pages {
           <p><a class="btn primary" href="\(Esc.attr(back))">\(Esc.text(backLabel))</a></p>
         </section>
         """
-        return Shell.document(title: "Aureum", active: "vault", body: body)
+        return Shell.document(title: "Sona", active: "vault", body: body)
     }
 
     private static func savedThumb(src: String, alt: String, caption: String) -> String {

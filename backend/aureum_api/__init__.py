@@ -1,1 +1,1 @@
-"""Aureum ledger API."""
+"""Sona ledger API."""

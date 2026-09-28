@@ -1,4 +1,4 @@
-# Aureum
+# Sona
 
 A ledger for gold jewellery. Each piece keeps a photograph, a bill, a weight, and a karat. The vault totals net gold, making charges, and the change since you bought the pieces.
 

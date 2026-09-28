@@ -102,7 +102,7 @@ enum Shell {
             <header class="rail">
               <a class="brand" href="/">
                 <span class="mark" aria-hidden="true"></span>
-                <span>Aureum</span>
+                <span>Sona</span>
               </a>
               <nav>
                 <a href="/" class="\(active == "vault" ? "active" : "")">Vault</a>

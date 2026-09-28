@@ -1,4 +1,4 @@
-"""HTTP API for the Aureum jewellery ledger."""
+"""HTTP API for the Sona jewellery ledger."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ async def lifespan(_app: FastAPI):
     yield
 
 
-app = FastAPI(title="Aureum", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Sona", version="1.0.0", lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)

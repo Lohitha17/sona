@@ -121,14 +121,14 @@ enum Aureum {
             router: router,
             configuration: .init(address: .hostname("0.0.0.0", port: port))
         )
-        print("Aureum interface http://127.0.0.1:\(port)  ledger \(apiBase)")
+        print("Sona interface http://127.0.0.1:\(port)  ledger \(apiBase)")
         do {
             try await app.runService()
         } catch {
             let text = String(describing: error)
             if text.contains("Address already in use") || text.contains("errno: 98") {
                 let message = """
-                Port \(port) is already in use, so this copy of Aureum stopped.
+                Port \(port) is already in use, so this copy of Sona stopped.
                 One is already open at http://127.0.0.1:\(port)
                 Stop that copy before starting another, or choose a free port: PORT=43124 swift run Aureum
 
