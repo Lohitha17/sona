@@ -36,6 +36,8 @@ swift run Aureum
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
+If either command reports “address already in use”, that part is already running. Open the link above, or stop the old process and start it again. For the Swift interface, `PORT=43124 swift run Aureum` uses a different port.
+
 `scripts/dev.sh` starts both. The first Swift build downloads Hummingbird and takes a while.
 
 The API also serves its own docs at [http://127.0.0.1:8741/docs](http://127.0.0.1:8741/docs).

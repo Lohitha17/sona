@@ -1,6 +1,12 @@
 import Foundation
 import Hummingbird
 
+#if canImport(Glibc)
+import Glibc
+#elseif canImport(Darwin)
+import Darwin
+#endif
+
 @main
 enum Aureum {
     static func main() async throws {
@@ -143,7 +149,22 @@ enum Aureum {
             configuration: .init(address: .hostname("0.0.0.0", port: port))
         )
         print("Aureum interface http://127.0.0.1:\(port)  ledger \(apiBase)")
-        try await app.runService()
+        do {
+            try await app.runService()
+        } catch {
+            let text = String(describing: error)
+            if text.contains("Address already in use") || text.contains("errno: 98") {
+                let message = """
+                Port \(port) is already in use, so this copy of Aureum stopped.
+                One is already open at http://127.0.0.1:\(port)
+                Stop that copy before starting another, or choose a free port: PORT=43124 swift run Aureum
+
+                """
+                FileHandle.standardError.write(Data(message.utf8))
+                exit(1)
+            }
+            throw error
+        }
     }
 }
 
