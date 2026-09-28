@@ -298,7 +298,7 @@ def summary(q: str = "", category: str = "", karat: str = ""):
         settings = _settings(conn)
         pieces = _load_pieces(conn)
     available = [category for category in CATEGORIES if any(piece["category"] == category for piece in pieces)]
-    available_karats = [item for item in KARATS if any(abs(piece["karat"] - item) < 0.05 for piece in pieces)]
+    available_karats = list(KARATS)
     if chosen:
         pieces = [piece for piece in pieces if piece["category"] == chosen]
     if chosen_karat:
