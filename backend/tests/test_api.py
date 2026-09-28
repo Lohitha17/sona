@@ -50,7 +50,7 @@ def test_create_values_and_image_roundtrip():
     metal = gold_value(fine, 9860)
     estimated = estimated_value(metal, 500)
     assert body["net_weight_g"] == round(net, 3)
-    assert body["fine_weight_g"] == round(fine, 3)
+    assert "fine_weight_g" not in body
     assert body["estimated_value"] == round(estimated, 2)
     assert body["has_image"] is True
 
@@ -77,14 +77,16 @@ def test_only_18_22_and_24_karat_are_accepted():
     listed = client.get("/api/summary", params={"karat": "24"})
     assert listed.status_code == 200
     assert any(piece["name"] == "Pure" for piece in listed.json()["pieces"])
-    assert 24 in listed.json()["available_karats"]
+    assert client.get("/api/meta").json()["karats"] == [24, 22, 18]
+    assert "available_karats" not in listed.json()
+    assert "currencies" not in client.get("/api/meta").json()
     vault = client.get("/api/summary")
     rows = vault.json()["by_karat"]
     assert [row["karat"] for row in rows] == [24, 22, 18]
     pure = next(row for row in rows if row["karat"] == 24)
     assert pure["pieces"] >= 1
     assert pure["net_weight_g"] > 0
-    assert pure["fine_weight_g"] > 0
+    assert "fine_weight_g" not in pure
     assert pure["estimated_value"] > 0
 
 

@@ -61,7 +61,6 @@ def _settings(conn) -> dict[str, Any]:
     return {
         "currency": row["currency"],
         "gold_rate_24k": row["gold_rate_24k"],
-        "updated_at": row["updated_at"],
     }
 
 
@@ -87,34 +86,24 @@ def _piece_out(row, rate: float) -> dict[str, Any]:
         "notes": row["notes"],
         "has_image": bool(row["image_file"]),
         "has_bill": bool(row["bill_file"]),
-        "fine_weight_g": calc.round_grams(fine),
         "gold_value": calc.round_money(metal),
         "estimated_value": calc.round_money(estimated),
         "unrealized": calc.round_money(calc.unrealized(estimated, row["purchase_price"])),
-        "created_at": row["created_at"],
         "updated_at": row["updated_at"],
     }
 
 
 def _totals(pieces: list[dict[str, Any]]) -> dict[str, Any]:
-    def add(key: str) -> float:
-        return calc.round_money(sum(piece[key] for piece in pieces)) if key != "pieces" else 0
+    def money(key: str) -> float:
+        return calc.round_money(sum(piece[key] for piece in pieces))
 
-    gross = calc.round_grams(sum(piece["gross_weight_g"] for piece in pieces))
-    stone = calc.round_grams(sum(piece["stone_weight_g"] for piece in pieces))
-    net = calc.round_grams(sum(piece["net_weight_g"] for piece in pieces))
-    fine = calc.round_grams(sum(piece["fine_weight_g"] for piece in pieces))
     return {
         "pieces": len(pieces),
-        "gross_weight_g": gross,
-        "stone_weight_g": stone,
-        "net_weight_g": net,
-        "fine_weight_g": fine,
-        "gold_value": add("gold_value"),
-        "making_charges": add("making_charge"),
-        "estimated_value": add("estimated_value"),
-        "purchase_price": add("purchase_price"),
-        "unrealized": add("unrealized"),
+        "net_weight_g": calc.round_grams(sum(piece["net_weight_g"] for piece in pieces)),
+        "making_charges": money("making_charge"),
+        "estimated_value": money("estimated_value"),
+        "purchase_price": money("purchase_price"),
+        "unrealized": money("unrealized"),
     }
 
 
@@ -130,8 +119,6 @@ def _by_category(pieces: list[dict[str, Any]]) -> list[dict[str, Any]]:
         rows.append(
             {
                 "category": category,
-                "pieces": len(group),
-                "net_weight_g": calc.round_grams(sum(item["net_weight_g"] for item in group)),
                 "estimated_value": calc.round_money(sum(item["estimated_value"] for item in group)),
             }
         )
@@ -148,7 +135,6 @@ def _by_karat(pieces: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "karat": karat,
                 "pieces": totals["pieces"],
                 "net_weight_g": totals["net_weight_g"],
-                "fine_weight_g": totals["fine_weight_g"],
                 "estimated_value": totals["estimated_value"],
             }
         )
@@ -266,7 +252,6 @@ def meta():
     return {
         "categories": list(CATEGORIES),
         "storages": list(STORAGES),
-        "currencies": list(CURRENCIES),
         "karats": list(KARATS),
     }
 
@@ -315,7 +300,6 @@ def summary(q: str = "", category: str = "", karat: str = ""):
         settings = _settings(conn)
         pieces = _load_pieces(conn)
     available = [category for category in CATEGORIES if any(piece["category"] == category for piece in pieces)]
-    available_karats = list(KARATS)
     if chosen:
         pieces = [piece for piece in pieces if piece["category"] == chosen]
     if chosen_karat:
@@ -345,7 +329,6 @@ def summary(q: str = "", category: str = "", karat: str = ""):
         "category": chosen,
         "karat": chosen_karat,
         "available_categories": available,
-        "available_karats": available_karats,
     }
 
 

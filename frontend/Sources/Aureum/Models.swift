@@ -3,7 +3,6 @@ import Foundation
 struct Settings: Codable, Sendable {
     var currency: String
     var goldRate24K: Double
-    var updatedAt: String
 }
 
 struct Piece: Codable, Sendable {
@@ -23,28 +22,20 @@ struct Piece: Codable, Sendable {
     var notes: String
     var hasImage: Bool
     var hasBill: Bool
-    var fineWeightG: Double
     var goldValue: Double
     var estimatedValue: Double
     var unrealized: Double
-    var createdAt: String
     var updatedAt: String
 }
 
 struct CategoryTotal: Codable, Sendable {
     var category: String
-    var pieces: Int
-    var netWeightG: Double
     var estimatedValue: Double
 }
 
 struct Totals: Codable, Sendable {
     var pieces: Int
-    var grossWeightG: Double
-    var stoneWeightG: Double
     var netWeightG: Double
-    var fineWeightG: Double
-    var goldValue: Double
     var makingCharges: Double
     var estimatedValue: Double
     var purchasePrice: Double
@@ -55,7 +46,6 @@ struct KaratTotal: Codable, Sendable {
     var karat: Int
     var pieces: Int
     var netWeightG: Double
-    var fineWeightG: Double
     var estimatedValue: Double
 }
 
@@ -69,7 +59,6 @@ struct Summary: Codable, Sendable {
     var category: String
     var karat: Int
     var availableCategories: [String]
-    var availableKarats: [Int]
 }
 
 struct PieceEnvelope: Codable, Sendable {
@@ -80,7 +69,6 @@ struct PieceEnvelope: Codable, Sendable {
 struct Meta: Codable, Sendable {
     var categories: [String]
     var storages: [String]
-    var currencies: [String]
     var karats: [Int]
 }
 
