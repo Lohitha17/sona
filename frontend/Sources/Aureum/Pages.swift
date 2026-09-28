@@ -464,19 +464,22 @@ enum Pages {
     }
 
     private static func karatStats(_ rows: [KaratTotal], currency: String) -> String {
-        rows.map { row in
+        let order = [18, 22, 24]
+        let boxes = rows.sorted { left, right in
+            (order.firstIndex(of: left.karat) ?? 99) < (order.firstIndex(of: right.karat) ?? 99)
+        }.map { row in
             """
-            <section class="karat-group">
-              <h2>\(row.karat)K</h2>
-              <div class="stats">
-                <article class="stat"><span>Pieces</span><strong>\(row.pieces)</strong></article>
-                <article class="stat"><span>Net gold</span><strong>\(Esc.text(Format.grams(row.netWeightG)))</strong></article>
-                <article class="stat"><span>Fine gold</span><strong>\(Esc.text(Format.grams(row.fineWeightG)))</strong><em>24K equivalent</em></article>
-                <article class="stat"><span>Vault value</span><strong>\(Esc.text(Format.money(row.estimatedValue, currency: currency)))</strong></article>
-              </div>
-            </section>
+            <article class="karat-box">
+              <span>\(row.karat)K</span>
+              <strong>\(row.pieces)</strong>
+              <em>\(row.pieces == 1 ? "piece" : "pieces")</em>
+              <p>\(Esc.text(Format.grams(row.netWeightG))) net</p>
+              <p>\(Esc.text(Format.grams(row.fineWeightG))) fine</p>
+              <p class="karat-value">\(Esc.text(Format.money(row.estimatedValue, currency: currency)))</p>
+            </article>
             """
         }.joined()
+        return "<section class=\"karat-row\">\(boxes)</section>"
     }
 
     private static func karatOptions(_ karats: [Int], selected: Double) -> String {

@@ -214,21 +214,45 @@ enum Shell {
       letter-spacing: -0.03em;
     }
     .lede { color: var(--muted); margin: 10px 0 0; max-width: 46ch; line-height: 1.5; }
-    .karat-group { margin: 4px 0 16px; }
-    .karat-group h2 {
-      margin: 0 0 8px;
+    .karat-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 180px));
+      gap: 12px;
+      margin: 0 0 22px;
+    }
+    .karat-box { padding: 12px 14px 11px; }
+    .karat-box span { color: var(--gold); }
+    .karat-box strong {
+      display: block;
+      margin-top: 6px;
       font-family: var(--serif);
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 500;
       letter-spacing: -0.03em;
     }
+    .karat-box em {
+      display: block;
+      margin-top: 2px;
+      color: var(--dim);
+      font-style: normal;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .karat-box p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .karat-box .karat-value { color: var(--ink); margin-top: 8px; }
     .stats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 12px;
       margin: 8px 0 14px;
     }
-    .stat, .panel, .card, .banner, .empty, .photo-frame {
+    .stat, .karat-box, .panel, .card, .banner, .empty, .photo-frame {
       background: linear-gradient(180deg, rgba(44, 36, 28, 0.92), rgba(28, 22, 18, 0.92));
       border: 1px solid var(--line);
       border-radius: 18px;
