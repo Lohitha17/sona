@@ -73,7 +73,6 @@ enum Pages {
               <div><dt>Net gold</dt><dd>\(Esc.text(Format.grams(piece.netWeightG)))</dd></div>
               <div><dt>Purity</dt><dd>\(Esc.text(Format.karat(piece.karat)))</dd></div>
               <div><dt>Wastage</dt><dd>\(Esc.text(Format.percent(piece.wastagePercent)))</dd></div>
-              <div><dt>Fine gold</dt><dd>\(Esc.text(Format.grams(piece.fineWeightG)))</dd></div>
               <div><dt>Hallmark</dt><dd>\(piece.hallmark.isEmpty ? "None recorded" : Esc.text(piece.hallmark))</dd></div>
               <div><dt>Acquired</dt><dd>\(Esc.text(Format.date(piece.acquiredOn)))</dd></div>
               <div><dt>Paid</dt><dd>\(Esc.text(Format.money(piece.purchasePrice, currency: settings.currency)))</dd></div>
@@ -137,7 +136,7 @@ enum Pages {
         \(banner)
         <p class="eyebrow">\(editing ? "Update the record" : "New record")</p>
         <h1>\(title)</h1>
-        <p class="lede">Gross weight minus stones is the gold. Fine gold is that weight brought to 24K, including wastage if the invoice charged it.</p>
+        <p class="lede">Gross weight minus stones is the gold. Wastage is included when the invoice charged it.</p>
         <form class="panel" style="margin-top:22px" method="post" action="\(action)" enctype="multipart/form-data" data-estimate data-rate="\(settings.goldRate24K)" data-currency="\(Esc.attr(settings.currency))">
           <div class="form-grid">
             <label class="span-2"><span class="label">Name</span><input name="name" required maxlength="80" value="\(Esc.attr(piece?.name ?? ""))" placeholder="Temple mango necklace"></label>
@@ -193,7 +192,7 @@ enum Pages {
             const net = Math.max(gross - stone, 0);
             const fine = net * (karat / 24) * (1 + wastage / 100);
             const vault = fine * rate + making;
-            out.textContent = "Net " + net.toFixed(2) + " g · fine gold " + fine.toFixed(2) + " g · vault " + money.format(vault);
+            out.textContent = "Net " + net.toFixed(2) + " g · vault " + money.format(vault);
           }
           form.addEventListener("input", render);
           render();
@@ -434,7 +433,6 @@ enum Pages {
         <section class="stats">
           <article class="stat"><span>Pieces</span><strong>\(totals.pieces)</strong></article>
           <article class="stat"><span>Net gold</span><strong>\(Esc.text(Format.grams(totals.netWeightG)))</strong></article>
-          <article class="stat"><span>Fine gold</span><strong>\(Esc.text(Format.grams(totals.fineWeightG)))</strong><em>24K equivalent</em></article>
           <article class="stat"><span>Vault value</span><strong>\(Esc.text(Format.money(totals.estimatedValue, currency: currency)))</strong></article>
         </section>
         <p class="substats">
@@ -474,7 +472,6 @@ enum Pages {
               <strong>\(row.pieces)</strong>
               <em>\(row.pieces == 1 ? "piece" : "pieces")</em>
               <p>\(Esc.text(Format.grams(row.netWeightG))) net</p>
-              <p>\(Esc.text(Format.grams(row.fineWeightG))) fine</p>
               <p class="karat-value">\(Esc.text(Format.money(row.estimatedValue, currency: currency)))</p>
             </article>
             """

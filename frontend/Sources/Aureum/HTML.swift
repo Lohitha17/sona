@@ -248,7 +248,7 @@ enum Shell {
     .karat-box .karat-value { color: var(--ink); margin-top: 8px; }
     .stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       margin: 8px 0 14px;
     }
