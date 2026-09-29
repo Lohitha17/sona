@@ -3,6 +3,7 @@ import io
 from fastapi.testclient import TestClient
 
 from aureum_api.calc import estimated_value, fine_weight, gold_value, net_weight
+from aureum_api.db import DATA, connect
 from aureum_api.main import app
 
 # 1x1 JPEG
@@ -58,6 +59,10 @@ def test_create_values_and_image_roundtrip():
     assert image.status_code == 200
     assert image.headers["content-type"].startswith("image/jpeg")
     assert image.content.startswith(b"\xff\xd8\xff")
+    with connect() as conn:
+        stored = conn.execute("SELECT image_blob FROM pieces WHERE id = ?", (body["id"],)).fetchone()
+    assert stored["image_blob"] == image.content
+    assert not (DATA / "uploads").exists()
 
     summary = client.get("/api/summary")
     assert summary.status_code == 200

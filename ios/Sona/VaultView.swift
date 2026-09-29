@@ -226,7 +226,7 @@ private struct PieceRow: View {
                 Text(piece.name)
                     .font(Theme.serif(20))
                     .foregroundStyle(Theme.ink)
-                Text("\(Format.grams(piece.netWeightG)) · \(piece.karat)K\(piece.billFilename == nil ? "" : " · Bill saved")")
+                Text("\(Format.grams(piece.netWeightG)) · \(piece.karat)K\(piece.billData == nil ? "" : " · Bill saved")")
                     .font(.subheadline)
                     .foregroundStyle(Theme.muted)
                 Text(Format.money(piece.vaultValue))
@@ -245,7 +245,7 @@ private struct PieceRow: View {
 
     @ViewBuilder
     private var thumbnail: some View {
-        if let image = ledger.image(named: piece.imageFilename) {
+        if let image = ledger.picture(piece.imageData) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()

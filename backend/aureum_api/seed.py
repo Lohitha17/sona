@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import shutil
 import uuid
 from datetime import datetime, timezone
 
-from aureum_api.db import SEED_IMAGES, UPLOADS, connect
+from aureum_api.db import SEED_IMAGES, connect
 
 PIECES = [
     {
@@ -116,18 +115,17 @@ def seed_if_empty() -> None:
         stamp = _now()
         for piece in PIECES:
             piece_id = str(uuid.uuid4())
-            image_file = None
             source = SEED_IMAGES / piece["image"]
-            if source.is_file():
-                image_file = f"{piece_id}.jpg"
-                shutil.copyfile(source, UPLOADS / image_file)
+            image_blob = source.read_bytes() if source.is_file() else None
+            image_type = "image/jpeg" if image_blob else None
             conn.execute(
                 """
                 INSERT INTO pieces (
                     id, name, category, gross_weight_g, stone_weight_g, karat,
                     wastage_percent, making_charge, purchase_price, acquired_on,
-                    storage, hallmark, notes, image_file, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    storage, hallmark, notes, image_blob, image_type,
+                    created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     piece_id,
@@ -143,7 +141,8 @@ def seed_if_empty() -> None:
                     piece["storage"],
                     piece["hallmark"],
                     piece["notes"],
-                    image_file,
+                    image_blob,
+                    image_type,
                     stamp,
                     stamp,
                 ),

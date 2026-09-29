@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from aureum_api import calc
 from aureum_api.db import (
@@ -18,7 +17,6 @@ from aureum_api.db import (
     CURRENCIES,
     KARATS,
     STORAGES,
-    UPLOADS,
     connect,
     init_db,
 )
@@ -84,8 +82,8 @@ def _piece_out(row, rate: float) -> dict[str, Any]:
         "storage": row["storage"],
         "hallmark": row["hallmark"],
         "notes": row["notes"],
-        "has_image": bool(row["image_file"]),
-        "has_bill": bool(row["bill_file"]),
+        "has_image": bool(row["has_image"]),
+        "has_bill": bool(row["has_bill"]),
         "gold_value": calc.round_money(metal),
         "estimated_value": calc.round_money(estimated),
         "unrealized": calc.round_money(calc.unrealized(estimated, row["purchase_price"])),
@@ -141,14 +139,37 @@ def _by_karat(pieces: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+_PIECE_SQL = """
+SELECT id, name, category, gross_weight_g, stone_weight_g, karat,
+       wastage_percent, making_charge, purchase_price, acquired_on,
+       storage, hallmark, notes, created_at, updated_at,
+       (image_blob IS NOT NULL) AS has_image,
+       (bill_blob IS NOT NULL) AS has_bill
+FROM pieces
+"""
+
+
 def _load_pieces(conn) -> list[dict[str, Any]]:
     rate = _settings(conn)["gold_rate_24k"]
-    rows = conn.execute("SELECT * FROM pieces ORDER BY created_at DESC, name COLLATE NOCASE").fetchall()
+    rows = conn.execute(_PIECE_SQL + " ORDER BY created_at DESC, name COLLATE NOCASE").fetchall()
     return [_piece_out(row, rate) for row in rows]
 
 
 def _get_row(conn, piece_id: str):
-    return conn.execute("SELECT * FROM pieces WHERE id = ?", (piece_id,)).fetchone()
+    return conn.execute(_PIECE_SQL + " WHERE id = ?", (piece_id,)).fetchone()
+
+
+def _blob_response(piece_id: str, blob_column: str, type_column: str, missing: str):
+    if blob_column not in ("image_blob", "bill_blob") or type_column not in ("image_type", "bill_type"):
+        raise HTTPException(status_code=500, detail="Unknown attachment.")
+    with connect() as conn:
+        row = conn.execute(
+            f"SELECT {blob_column} AS blob, {type_column} AS media FROM pieces WHERE id = ?",
+            (piece_id,),
+        ).fetchone()
+    if row is None or row["blob"] is None:
+        raise HTTPException(status_code=404, detail=missing)
+    return Response(content=row["blob"], media_type=row["media"] or "application/octet-stream")
 
 
 def _clean_text(value: str, field: str, limit: int, required: bool = False) -> str:
@@ -196,8 +217,7 @@ def _sniff_image(data: bytes) -> str | None:
     return None
 
 
-def _media_type(filename: str) -> str:
-    ext = Path(filename).suffix.lower()
+def _media_type(ext: str) -> str:
     return {
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
@@ -207,7 +227,7 @@ def _media_type(filename: str) -> str:
     }.get(ext, "application/octet-stream")
 
 
-async def _store_image(upload: UploadFile | None) -> str | None:
+async def _read_image(upload: UploadFile | None) -> tuple[bytes, str] | None:
     if upload is None or not upload.filename:
         return None
     data = await upload.read(MAX_IMAGE_BYTES + 1)
@@ -218,17 +238,7 @@ async def _store_image(upload: UploadFile | None) -> str | None:
     ext = _sniff_image(data)
     if ext is None:
         raise HTTPException(status_code=422, detail="Use a JPEG, PNG, WEBP, or GIF photograph.")
-    filename = f"{uuid4()}{ext}"
-    (UPLOADS / filename).write_bytes(data)
-    return filename
-
-
-def _delete_image(filename: str | None) -> None:
-    if not filename:
-        return
-    path = (UPLOADS / filename).resolve()
-    if path.is_relative_to(UPLOADS.resolve()) and path.is_file():
-        path.unlink()
+    return data, _media_type(ext)
 
 
 def _parse_date(value: str) -> str | None:
@@ -344,14 +354,7 @@ def read_piece(piece_id: str):
 
 @app.get("/api/pieces/{piece_id}/image")
 def read_image(piece_id: str):
-    with connect() as conn:
-        row = _get_row(conn, piece_id)
-    if row is None or not row["image_file"]:
-        raise HTTPException(status_code=404, detail="No photograph for this piece.")
-    path = (UPLOADS / row["image_file"]).resolve()
-    if not path.is_relative_to(UPLOADS.resolve()) or not path.is_file():
-        raise HTTPException(status_code=404, detail="Photograph file is missing.")
-    return FileResponse(path, media_type=_media_type(path.name))
+    return _blob_response(piece_id, "image_blob", "image_type", "No photograph for this piece.")
 
 
 @app.post("/api/pieces", status_code=201)
@@ -375,8 +378,8 @@ async def create_piece(
         name, category, gross_weight_g, stone_weight_g, karat, wastage_percent,
         making_charge, purchase_price, acquired_on, storage, hallmark, notes,
     )
-    image_file = await _store_image(image)
-    bill_file = await _store_image(bill)
+    image = await _read_image(image)
+    bill = await _read_image(bill)
     piece_id = str(uuid4())
     stamp = _now()
     with connect() as conn:
@@ -385,8 +388,9 @@ async def create_piece(
             INSERT INTO pieces (
                 id, name, category, gross_weight_g, stone_weight_g, karat,
                 wastage_percent, making_charge, purchase_price, acquired_on,
-                storage, hallmark, notes, image_file, bill_file, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                storage, hallmark, notes, image_blob, image_type, bill_blob, bill_type,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 piece_id,
@@ -402,8 +406,10 @@ async def create_piece(
                 fields["storage"],
                 fields["hallmark"],
                 fields["notes"],
-                image_file,
-                bill_file,
+                image[0] if image else None,
+                image[1] if image else None,
+                bill[0] if bill else None,
+                bill[1] if bill else None,
                 stamp,
                 stamp,
             ),
@@ -435,30 +441,19 @@ async def update_piece(
         name, category, gross_weight_g, stone_weight_g, karat, wastage_percent,
         making_charge, purchase_price, acquired_on, storage, hallmark, notes,
     )
-    new_image = await _store_image(image)
-    new_bill = await _store_image(bill)
+    new_image = await _read_image(image)
+    new_bill = await _read_image(bill)
     with connect() as conn:
         row = _get_row(conn, piece_id)
         if row is None:
-            _delete_image(new_image)
-            _delete_image(new_bill)
             raise HTTPException(status_code=404, detail="That piece is not in the vault.")
-        image_file = row["image_file"]
-        bill_file = row["bill_file"]
-        if new_image:
-            _delete_image(image_file)
-            image_file = new_image
-        if new_bill:
-            _delete_image(bill_file)
-            bill_file = new_bill
         stamp = _now()
         conn.execute(
             """
             UPDATE pieces SET
                 name = ?, category = ?, gross_weight_g = ?, stone_weight_g = ?,
                 karat = ?, wastage_percent = ?, making_charge = ?, purchase_price = ?,
-                acquired_on = ?, storage = ?, hallmark = ?, notes = ?, image_file = ?,
-                bill_file = ?, updated_at = ?
+                acquired_on = ?, storage = ?, hallmark = ?, notes = ?, updated_at = ?
             WHERE id = ?
             """,
             (
@@ -474,12 +469,20 @@ async def update_piece(
                 fields["storage"],
                 fields["hallmark"],
                 fields["notes"],
-                image_file,
-                bill_file,
                 stamp,
                 piece_id,
             ),
         )
+        if new_image:
+            conn.execute(
+                "UPDATE pieces SET image_blob = ?, image_type = ? WHERE id = ?",
+                (new_image[0], new_image[1], piece_id),
+            )
+        if new_bill:
+            conn.execute(
+                "UPDATE pieces SET bill_blob = ?, bill_type = ? WHERE id = ?",
+                (new_bill[0], new_bill[1], piece_id),
+            )
         conn.commit()
         updated = _get_row(conn, piece_id)
         return _piece_out(updated, _settings(conn)["gold_rate_24k"])
@@ -487,48 +490,37 @@ async def update_piece(
 
 @app.get("/api/pieces/{piece_id}/bill")
 def read_bill(piece_id: str):
-    with connect() as conn:
-        row = _get_row(conn, piece_id)
-    if row is None or not row["bill_file"]:
-        raise HTTPException(status_code=404, detail="No bill for this piece.")
-    path = (UPLOADS / row["bill_file"]).resolve()
-    if not path.is_relative_to(UPLOADS.resolve()) or not path.is_file():
-        raise HTTPException(status_code=404, detail="Bill file is missing.")
-    return FileResponse(path, media_type=_media_type(path.name))
+    return _blob_response(piece_id, "bill_blob", "bill_type", "No bill for this piece.")
 
 
 @app.post("/api/pieces/{piece_id}/image")
 async def replace_image(piece_id: str, image: UploadFile = File(...)):
-    return await _replace_attachment(piece_id, "image_file", image, "Take or choose a photograph first.")
+    return await _replace_attachment(piece_id, "image", image, "Take or choose a photograph first.")
 
 
 @app.post("/api/pieces/{piece_id}/bill")
 async def replace_bill(piece_id: str, bill: UploadFile = File(...)):
-    return await _replace_attachment(piece_id, "bill_file", bill, "Take or choose a bill first.")
+    return await _replace_attachment(piece_id, "bill", bill, "Take or choose a bill first.")
 
 
-async def _replace_attachment(piece_id: str, column: str, upload: UploadFile, missing: str):
-    if column not in ("image_file", "bill_file"):
-        raise HTTPException(status_code=500, detail="Unknown attachment.")
-    stored = await _store_image(upload)
+async def _replace_attachment(piece_id: str, kind: str, upload: UploadFile, missing: str):
+    columns = {"image": ("image_blob", "image_type"), "bill": ("bill_blob", "bill_type")}
+    blob_column, type_column = columns[kind]
+    stored = await _read_image(upload)
     if stored is None:
         raise HTTPException(status_code=422, detail=missing)
     with connect() as conn:
         row = _get_row(conn, piece_id)
         if row is None:
-            _delete_image(stored)
             raise HTTPException(status_code=404, detail="That piece is not in the vault.")
-        previous = row[column]
         stamp = _now()
         conn.execute(
-            f"UPDATE pieces SET {column} = ?, updated_at = ? WHERE id = ?",
-            (stored, stamp, piece_id),
+            f"UPDATE pieces SET {blob_column} = ?, {type_column} = ?, updated_at = ? WHERE id = ?",
+            (stored[0], stored[1], stamp, piece_id),
         )
         conn.commit()
         updated = _get_row(conn, piece_id)
-        payload = _piece_out(updated, _settings(conn)["gold_rate_24k"])
-    _delete_image(previous)
-    return payload
+        return _piece_out(updated, _settings(conn)["gold_rate_24k"])
 
 
 @app.post("/api/pieces/{piece_id}/delete")
@@ -539,8 +531,6 @@ def delete_piece(piece_id: str):
             raise HTTPException(status_code=404, detail="That piece is not in the vault.")
         conn.execute("DELETE FROM pieces WHERE id = ?", (piece_id,))
         conn.commit()
-    _delete_image(row["image_file"])
-    _delete_image(row["bill_file"])
     return {"ok": True}
 
 

@@ -5,37 +5,24 @@ import UIKit
 final class Ledger {
     private(set) var pieces: [Piece] = []
     private let fileURL: URL
-    private let imagesURL: URL
     private let persists: Bool
 
     init(preview: Bool = false) {
         persists = !preview
         let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         fileURL = root.appendingPathComponent(preview ? "preview-pieces.json" : "pieces.json")
-        imagesURL = root.appendingPathComponent(preview ? "preview-uploads" : "uploads", isDirectory: true)
         if persists {
-            try? FileManager.default.createDirectory(at: imagesURL, withIntermediateDirectories: true)
             load()
         }
     }
 
-    func image(named filename: String?) -> UIImage? {
-        guard let filename else { return nil }
-        let url = imagesURL.appendingPathComponent(filename)
-        guard let data = try? Data(contentsOf: url) else { return nil }
+    func picture(_ data: Data?) -> UIImage? {
+        guard let data else { return nil }
         return UIImage(data: data)
     }
 
-    func store(_ image: UIImage, replacing previous: String?) -> String? {
-        deleteFile(previous)
-        guard let data = image.sonaJPEG() else { return nil }
-        let filename = UUID().uuidString + ".jpg"
-        do {
-            try data.write(to: imagesURL.appendingPathComponent(filename), options: .atomic)
-            return filename
-        } catch {
-            return nil
-        }
+    func jpeg(_ image: UIImage) -> Data? {
+        image.sonaJPEG()
     }
 
     func upsert(_ piece: Piece) {
@@ -52,8 +39,6 @@ final class Ledger {
     }
 
     func delete(_ piece: Piece) {
-        deleteFile(piece.imageFilename)
-        deleteFile(piece.billFilename)
         pieces.removeAll { $0.id == piece.id }
         save()
     }
@@ -72,12 +57,6 @@ final class Ledger {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         guard let data = try? encoder.encode(pieces) else { return }
         try? data.write(to: fileURL, options: .atomic)
-    }
-
-    private func deleteFile(_ filename: String?) {
-        guard let filename else { return }
-        let url = imagesURL.appendingPathComponent(filename)
-        try? FileManager.default.removeItem(at: url)
     }
 }
 

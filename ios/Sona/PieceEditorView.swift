@@ -64,11 +64,11 @@ struct PieceEditorView: View {
                     .lineLimit(3...6)
             }
             Section {
-                PhotoButtons(title: "Photograph", image: photograph ?? ledger.image(named: draft.imageFilename)) { image in
+                PhotoButtons(title: "Photograph", image: photograph ?? ledger.picture(draft.imageData)) { image in
                     photograph = image
                     photoChanged = true
                 }
-                PhotoButtons(title: "Bill", image: bill ?? ledger.image(named: draft.billFilename)) { image in
+                PhotoButtons(title: "Bill", image: bill ?? ledger.picture(draft.billData)) { image in
                     bill = image
                     billChanged = true
                 }
@@ -133,10 +133,10 @@ struct PieceEditorView: View {
         draft.notes = draft.notes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !recordDate { draft.acquiredOn = nil }
         if photoChanged, let photograph {
-            draft.imageFilename = ledger.store(photograph, replacing: draft.imageFilename)
+            draft.imageData = ledger.jpeg(photograph)
         }
         if billChanged, let bill {
-            draft.billFilename = ledger.store(bill, replacing: draft.billFilename)
+            draft.billData = ledger.jpeg(bill)
         }
         ledger.upsert(draft)
         dismiss()

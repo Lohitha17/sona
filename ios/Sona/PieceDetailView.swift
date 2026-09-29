@@ -49,7 +49,7 @@ struct PieceDetailView: View {
                     Text(piece.notes)
                         .foregroundStyle(Theme.muted)
                 }
-                if let bill = ledger.image(named: piece.billFilename) {
+                if let bill = ledger.picture(piece.billData) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Bill")
                             .font(.caption)
@@ -83,7 +83,7 @@ struct PieceDetailView: View {
 
     @ViewBuilder
     private func photo(_ piece: Piece) -> some View {
-        if let image = ledger.image(named: piece.imageFilename) {
+        if let image = ledger.picture(piece.imageData) {
             Image(uiImage: image)
                 .resizable()
                 .scaledToFill()

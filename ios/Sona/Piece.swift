@@ -14,8 +14,8 @@ struct Piece: Identifiable, Codable, Equatable {
     var storage: String
     var hallmark: String
     var notes: String
-    var imageFilename: String?
-    var billFilename: String?
+    var imageData: Data?
+    var billData: Data?
     var createdAt: Date
     var updatedAt: Date
 
@@ -70,8 +70,8 @@ struct Piece: Identifiable, Codable, Equatable {
             storage: "Home safe",
             hallmark: "",
             notes: "",
-            imageFilename: nil,
-            billFilename: nil,
+            imageData: nil,
+            billData: nil,
             createdAt: now,
             updatedAt: now
         )

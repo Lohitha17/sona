@@ -26,7 +26,7 @@ The phone app is a separate SwiftUI project in `ios/`. It keeps the pieces, phot
 4. Plug in the iPhone, tap Trust on the phone, and choose that iPhone as the run destination.
 5. Press Run.
 
-The first time the phone opens Sona, go to Settings, General, VPN & Device Management, and trust your developer certificate. A free Apple ID install lasts about 7 days, then run it from Xcode again. Photos you take or choose are copied into the app’s private documents folder on the phone.
+The first time the phone opens Sona, go to Settings, General, VPN & Device Management, and trust your developer certificate. A free Apple ID install lasts about 7 days, then run it from Xcode again. Photos you take or choose are saved in the same vault file as the weights and prices.
 
 ## Run the computer version
 
@@ -54,7 +54,7 @@ If either command reports “address already in use”, that part is already run
 
 The API also serves its own docs at [http://127.0.0.1:8741/docs](http://127.0.0.1:8741/docs).
 
-On first launch the vault includes six sample pieces. Photographs, weights, and prices live in `backend/data/`, which is created locally and is not part of the source tree.
+On first launch the vault includes six sample pieces. Photographs, bills, weights, and prices live together in `backend/data/aureum.db`. Pictures are SQLite blobs, not files in a folder. That database is created locally and is not part of the source tree.
 
 `PORT` changes the Swift interface port (default `43123`). `AUREUM_API` is the ledger URL the interface calls (default `http://127.0.0.1:8741`).
 
